@@ -1,2 +1,18 @@
 ## Venv 
 venv/
+
+## Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+## Environment variables
+.env
+
+## Editor
+.vscode/
+.idea/
+
+## OS
+.DS_Store
