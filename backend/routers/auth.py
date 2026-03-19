@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from backend.utils import security
 from backend.dependencies import get_db
 from backend.models.user import User
-from backend.schemas.user import UserCreate, UserLogin, UserResponse
+from backend.schemas.user import UserCreate, UserLogin, UserResponse, Token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -24,7 +24,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)) -> User:
     
     return new_user
 
-@router.post("/login")
+@router.post("/login", response_model=Token)
 def login(user: UserLogin, db: Session = Depends(get_db)) -> str:
 
     db_user = db.query(User).filter(User.email == user.email).first()
