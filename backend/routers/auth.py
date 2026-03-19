@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from utils import security
-from backend import database
-from backend.models import User
-from backend.schemas import UserCreate, UserLogin
+from backend.utils import security
+from backend.dependencies import get_db
+from backend.models.user import User
+from backend.schemas.user import UserCreate, UserLogin
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=UserCreate)
-def register(user: UserCreate, db: Session = Depends(database.get_db)) -> User:
+def register(user: UserCreate, db: Session = Depends(get_db)) -> User:
 
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
@@ -24,7 +24,7 @@ def register(user: UserCreate, db: Session = Depends(database.get_db)) -> User:
     return new_user
 
 @router.post("/login")
-def login(user: UserLogin, db: Session = Depends(database.get_db)) -> str:
+def login(user: UserLogin, db: Session = Depends(get_db)) -> str:
 
     db_user = db.query(User).filter(User.email == user.email).first()
     if not db_user or not security.verify_password(user.hashed_password, db_user.hashed_password):

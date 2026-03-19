@@ -16,6 +16,10 @@ class UserUpdate(BaseModel):
     role: Optional[str] = Field(default=None)
     is_active: Optional[bool] = Field(default=None)
 
+class UserLogin(BaseModel):
+    email: EmailStr
+    passworld: str = Field(min_length=8)
+
 class UserResponse(UserBase):
     id: int
 
