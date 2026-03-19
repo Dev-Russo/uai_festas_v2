@@ -1,18 +1,36 @@
-## Venv 
+## Venv (Ambiente Virtual)
 venv/
+.venv/
+env/
 
-## Python
+## Python (Arquivos compilados e Cache)
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
+.coverage
+htmlcov/
 
-## Environment variables
+## Alembic (Somente caches, NÃO ignore a pasta versions)
+**/alembic/__pycache__/
+backend/alembic/versions/__pycache__/
+
+## Environment Variables (Segurança Crítica)
 .env
+.env.*
+!.env.example  # Permite subir um exemplo sem dados sensíveis
 
-## Editor
+## Editor & IDEs
 .vscode/
 .idea/
+*.swp
+*.swo
 
-## OS
+## OS (Arquivos de sistema)
 .DS_Store
+Thumbs.db
+
+## Databases (Evita subir o arquivo do banco se usar SQLite local)
+*.sqlite3
+*.db
