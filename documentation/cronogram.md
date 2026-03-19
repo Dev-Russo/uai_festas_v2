@@ -76,12 +76,12 @@ Ter o esqueleto completo do sistema funcionando: um produtor consegue se cadastr
 - Relacionamento: um usuário tem muitos eventos, um evento tem muitos produtos
 
 ### ✅ Critérios Mínimos de Aceitação
-- [ ] É possível criar um usuário, fazer login e receber um JWT válido
+- [X] É possível criar um usuário, fazer login e receber um JWT válido
 - [ ] Rotas protegidas retornam 401 sem token e funcionam com token válido
 - [ ] CRUD completo de eventos funcionando via Swagger
 - [ ] CRUD completo de produtos vinculados a evento funcionando
-- [ ] Migrations rodando com `alembic upgrade head` sem erros
-- [ ] Nenhuma senha armazenada em texto puro no banco
+- [X] Migrations rodando com `alembic upgrade head` sem erros
+- [X] Nenhuma senha armazenada em texto puro no banco
 - [ ] Usuário só acessa seus próprios eventos (não consegue ver evento de outro usuário)
 
 ### 📚 Conceitos que Você Vai Aprender Fazendo

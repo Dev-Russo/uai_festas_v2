@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from backend.utils import security
 from backend.dependencies import get_db
@@ -25,9 +26,9 @@ def register(user: UserCreate, db: Session = Depends(get_db)) -> User:
     return new_user
 
 @router.post("/login", response_model=Token)
-def login(user: UserLogin, db: Session = Depends(get_db)) -> str:
+def login(user: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)) -> str:
 
-    db_user = db.query(User).filter(User.email == user.email).first()
+    db_user = db.query(User).filter(User.email == user.username).first()
     if not db_user or not security.verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     

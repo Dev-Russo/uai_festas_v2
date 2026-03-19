@@ -1,7 +1,19 @@
+from fastapi import Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from backend.dependencies import get_db
+from backend.schemas.user import TokenData
+from backend.models.user import User
+from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from jose import jwt
 from backend.config import settings
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 """Security utilities for password hashing and verification using bcrypt algorithm."""
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -26,3 +38,24 @@ def create_access_token(data: dict) -> str:
 
     ## Encode the claims into a JWT token using the secret key and the HS256 algorithm.
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, key = settings.SECRET_KEY, algorithms = settings.ALGORITHM)
+        email: str = payload.get('sub')
+        if email is None:
+            raise credentials_exception
+        else:
+            token_data = TokenData(email = email)
+    except:
+        raise credentials_exception
+    
+    user = db.query(User).filter(User.email == token_data.email).first()
+    if user is None:
+        raise credentials_exception
+    return user
