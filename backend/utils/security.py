@@ -12,7 +12,8 @@ def verify_password(plain_password, hashed_password) -> bool:
 
 """Function to hash a password using bcrypt algorithm."""
 def get_password_hash(password) -> str:
-    return pwd_context.hash(password)
+    print("Senha recebida para hash:", password, "Tamanho:", len(password))
+    return pwd_context.hash(password[:72])
 
 """Function to create a JWT access token with an expiration time."""
 def create_access_token(data: dict) -> str:

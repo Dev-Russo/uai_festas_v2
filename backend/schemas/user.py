@@ -8,7 +8,7 @@ class UserBase(BaseModel):
     is_active: bool = True
 
 class UserCreate(UserBase):
-    hashed_password: str = Field(min_length=8) 
+    password: str = Field(min_length=8) 
 
 class UserUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=1, max_length=55)
@@ -18,7 +18,7 @@ class UserUpdate(BaseModel):
 
 class UserLogin(BaseModel):
     email: EmailStr
-    passworld: str = Field(min_length=8)
+    password: str = Field(min_length=8, max_length=72)
 
 class UserResponse(UserBase):
     id: int
