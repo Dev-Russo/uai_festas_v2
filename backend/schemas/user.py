@@ -13,7 +13,6 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=1, max_length=55)
     email: Optional[EmailStr] = Field(default=None)
-    role: Optional[str] = Field(default=None)
     is_active: Optional[bool] = Field(default=None)
 
 class UserLogin(BaseModel):
