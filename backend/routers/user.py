@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from backend.dependencies import get_db
 from backend.utils.security import get_current_user
 from backend.models.user import User
-from backend.schemas.user import UserResponse, UserUpdate
+from backend.schemas.user import UserResponse, UserUpdate, PasswordChange
 
 router = APIRouter(prefix='/users', tags=['users'])
 
@@ -32,8 +32,14 @@ def edit_user(user_data: UserUpdate, db: Session = Depends(get_db), current_user
 
     return current_user
 
+@router.put('/me/change-password', response_model=UserResponse)
+def change_password(
     
+    data: PasswordChange, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
     
+    ):
     
-
-    
+    from backend.services.user import update_user_password
+    return update_user_password(db, current_user, data)
