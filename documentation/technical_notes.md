@@ -82,9 +82,9 @@ Se a dependência falhar, a rota não é executada.
 
 ```python
 def create_event(
-    event: EventCreate,                              # 3
-    db: Session = Depends(get_db),                   # 1
-    current_user: User = Depends(get_current_user)   # 2
+    event: EventCreate,                              # body validado pelo Pydantic
+    db: Session = Depends(get_db),                   # sessão do banco
+    current_user: User = Depends(get_current_user)   # usuário autenticado
 ):
 ```
 
@@ -115,3 +115,147 @@ Retorna resposta
       ↓
 finally: db.close()
 ```
+
+---
+
+## `services/` — Lógica de Negócio
+
+A pasta `services` serve para separar a **receita** (lógica) da **entrega** (rota). Em vez de deixar a manipulação do banco espalhada nos routers, criamos funções dedicadas nos arquivos de serviço.
+
+**Desacoplamento:** a rota cuida apenas de receber a requisição e devolver a resposta. O serviço cuida das regras de negócio como validar senha, verificar permissões e aplicar regras de negócio.
+
+**Reuso:** se você precisar trocar a senha de um usuário via script de terminal ou tarefa agendada, você chama a mesma função do serviço sem precisar de uma requisição HTTP.
+
+**Testabilidade:** é muito mais fácil criar testes unitários para uma função pura de serviço do que para uma rota que depende de todo o contexto do FastAPI.
+
+```python
+# router — só recebe e devolve
+@router.post('/me/change-password')
+def change_password(data: PasswordChange, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return update_user_password(db, current_user, data)
+
+# service — faz o trabalho pesado
+def update_user_password(db: Session, user: User, data: PasswordChange) -> User:
+    if not verify_password(data.old_password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Senha atual incorreta")
+    user.hashed_password = get_password_hash(data.new_password)
+    db.commit()
+    db.refresh(user)
+    return user
+```
+
+---
+
+## `UserUpdate` e `exclude_unset` — Atualização Parcial com Pydantic
+
+Ao criar um schema para atualização, os campos são `Optional` porque o usuário pode querer alterar só o email sem mexer no nome. O segredo está no `.model_dump(exclude_unset=True)`.
+
+**`exclude_unset=True`:** garante que o Pydantic ignore campos que o usuário não enviou. Se só o email foi enviado, o `name` não é sobrescrito como `None` no banco.
+
+**Atualização dinâmica com `setattr`:** em vez de escrever uma linha para cada campo, usamos um loop que aplica as mudanças automaticamente independente de quantos campos o schema tiver.
+
+```python
+update_data = user_data.model_dump(exclude_unset=True)
+
+for key, value in update_data.items():
+    setattr(current_user, key, value)
+
+db.commit()
+db.refresh(current_user)
+```
+
+---
+
+## Regras de Argumentos: Python puro vs FastAPI
+
+Existe uma diferença importante entre funções de serviço (Python puro) e rotas do FastAPI.
+
+### Python puro — regra rígida
+Argumentos obrigatórios devem vir **antes** de argumentos com valor padrão. Violar isso gera `SyntaxError`.
+
+```python
+# ❌ Errado
+def func(opcional=1, obrigatorio: str): ...
+
+# ✅ Certo
+def func(obrigatorio: str, opcional=1): ...
+```
+
+A anotação de tipo com `:` não é valor padrão, é só uma dica de tipo. Valor padrão é só quando tem `=`.
+
+### FastAPI routers — aparentemente flexível
+Nas rotas o FastAPI parece ignorar a ordem porque o `Depends()` tecnicamente atribui um valor padrão ao argumento. Por isso os schemas (obrigatórios, sem `=`) geralmente vêm primeiro e as dependências (`= Depends(...)`) vêm por último.
+
+```python
+# FastAPI entende isso sem problema
+def create_event(
+    event: EventCreate,                            # obrigatório, sem =
+    db: Session = Depends(get_db),                 # tem = portanto opcional
+    current_user: User = Depends(get_current_user) # tem = portanto opcional
+):
+```
+
+---
+
+## Segurança: Troca de Senha
+
+A troca de senha nunca deve estar no mesmo endpoint que edita nome ou email. Ela exige um fluxo próprio por dois motivos:
+
+**Validação da senha atual:** antes de salvar a nova senha, o sistema precisa confirmar com `verify_password` que quem está trocando é o dono da conta.
+
+**Endpoint isolado:** usar `POST /users/me/change-password` evita que uma edição acidental de perfil altere ou apague a senha sem querer.
+
+```python
+class PasswordChange(BaseModel):
+    old_password: str
+    new_password: str = Field(..., min_length=8)
+```
+
+---
+
+## OAuth2 e o formato `form-data`
+
+Quando você usa `OAuth2PasswordBearer` no FastAPI, a rota de login espera os dados no formato `application/x-www-form-urlencoded`, não JSON. Isso segue a especificação OAuth2.
+
+```python
+# No backend, use OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
+
+@router.post("/auth/login")
+def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == data.username).first()
+    ...
+```
+
+No frontend, ao invés de `JSON.stringify`, você precisa usar `URLSearchParams`:
+
+```javascript
+const formData = new URLSearchParams();
+formData.append('username', email);
+formData.append('password', senha);
+
+fetch('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: formData
+});
+```
+
+---
+
+## Tratamento de Erros de Integridade no Banco
+
+Quando o usuário tenta salvar um email que já existe, o `db.commit()` lança um `IntegrityError`. Sem tratar isso o sistema retorna um erro 500 genérico e confuso.
+
+```python
+from sqlalchemy.exc import IntegrityError
+
+try:
+    db.commit()
+    db.refresh(current_user)
+except IntegrityError:
+    db.rollback()
+    raise HTTPException(status_code=400, detail="E-mail já cadastrado.")
+```
+
+O `db.rollback()` é obrigatório aqui. Se você não desfizer a transação com erro, a sessão fica em estado inválido e as próximas operações podem falhar.
