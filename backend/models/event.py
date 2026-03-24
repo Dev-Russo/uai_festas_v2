@@ -6,12 +6,12 @@ from backend.database import Base
 class Event(Base):
     __tablename__ = "event"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True, nullable=False)
     name = Column(String, index=True, nullable=False)
     status = Column(String, index=True, default="Not Realized", nullable=False) #Não Realizado, Realizado, Cancelado.
-    event_date = Column(DateTime(timezone=True), server_default=func.now())
+    event_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     description = Column(String, nullable=True)
-    sales_start_date = Column(DateTime(timezone=True), server_default=func.now())
+    sales_start_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
