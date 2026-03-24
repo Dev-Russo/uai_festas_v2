@@ -1,4 +1,5 @@
 from sqlalchemy import Boolean, Column, Integer, String, DateTime
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func 
 from backend.database import Base
 
@@ -12,3 +13,6 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, server_default="true", nullable=False)
+
+    #relationship with events
+    events = relationship("Event", back_populates="owner")
