@@ -6,8 +6,6 @@ from fastapi import HTTPException
 
 
 def create_event(db: Session, event_data: dict, user: User):
-    # Importa o model Event
-    from backend.models.event import Event
     # Cria um novo evento associando ao usuário
     new_event = Event(**event_data.model_dump(), owner=user)
     # Adiciona o evento à sessão do banco
