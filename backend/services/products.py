@@ -36,7 +36,7 @@ def get_products(db: Session, user: User, event: Event):
     elif event.owner.id == user.id: 
         db_products = db.query(Product).filter(Product.event_id == event.id).all()
     else:
-        HTTPException(status_code=403, detail="Você não é dono desse evento")
+        raise HTTPException(status_code=403, detail="Você não é dono desse evento")
 
     if not db_products:
         raise HTTPException(status_code=404, detail="Não foi encontrado os produtos")
