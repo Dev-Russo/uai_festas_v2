@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from backend.dependencies import get_event_by_id
+from backend.dependencies.event import get_event_by_id
 from sqlalchemy.orm import Session
 from backend.dependencies import get_db
 from backend.utils.security import get_current_user

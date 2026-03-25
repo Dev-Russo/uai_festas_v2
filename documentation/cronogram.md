@@ -77,12 +77,12 @@ Ter o esqueleto completo do sistema funcionando: um produtor consegue se cadastr
 
 ### ✅ Critérios Mínimos de Aceitação
 - [X] É possível criar um usuário, fazer login e receber um JWT válido
-- [ ] Rotas protegidas retornam 401 sem token e funcionam com token válido
-- [ ] CRUD completo de eventos funcionando via Swagger
-- [ ] CRUD completo de produtos vinculados a evento funcionando
+- [X] Rotas protegidas retornam 401 sem token e funcionam com token válido
+- [X] CRUD completo de eventos funcionando via Swagger
+- [X] CRUD completo de produtos vinculados a evento funcionando (Falta fazer o teste para confirmação)
 - [X] Migrations rodando com `alembic upgrade head` sem erros
 - [X] Nenhuma senha armazenada em texto puro no banco
-- [ ] Usuário só acessa seus próprios eventos (não consegue ver evento de outro usuário)
+- [X] Usuário só acessa seus próprios eventos (não consegue ver evento de outro usuário)
 
 ### 📚 Conceitos que Você Vai Aprender Fazendo
 - Estrutura de projeto FastAPI com routers, schemas, models e utils separados

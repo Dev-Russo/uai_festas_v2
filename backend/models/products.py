@@ -9,7 +9,7 @@ class Product(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False) 
     start_selling_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=True)
-    end_selling_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=True)
+    end_selling_date = Column(DateTime(timezone=True), default=None)
     price = Column(Integer, nullable=False)
 
     event_id = Column(Integer, ForeignKey("event.id"), nullable=False)
