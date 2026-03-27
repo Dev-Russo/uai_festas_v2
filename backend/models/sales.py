@@ -11,7 +11,7 @@ class Sales(Base):
     price = Column(Integer, nullable=False)
     product_id = Column(Integer, ForeignKey("product.id"), nullable=False)
     method_of_payment = Column(String, nullable=False)
-    status = Column(String, index=True, nullable=False) #Payed, Cancelled, Check-in
+    status = Column(String, index=True, nullable=False) #paid, cancelled, check_in
     sale_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     #relationship with product

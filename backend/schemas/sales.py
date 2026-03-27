@@ -1,6 +1,7 @@
 from pydantic import BaseModel, validator
 from typing import Optional
 from datetime import datetime
+from backend.enums.sales import SaleStatus
 
 class SalesBase(BaseModel):
     buyer_name: str
@@ -8,11 +9,11 @@ class SalesBase(BaseModel):
     product_id: int
     method_of_payment: str
     sale_date: datetime = datetime.now()
-    status: str
+    status: SaleStatus
 
     @validator("status")
     def validate_status(cls, value):
-        allowed_statuses = ["Payed", "Cancelled", "Check-in"]
+        allowed_statuses = [status.value for status in SaleStatus]
         if value not in allowed_statuses:
             raise ValueError(f"Status must be one of {allowed_statuses}")
         return value
@@ -25,7 +26,7 @@ class SalesUpdate(SalesBase):
     price: Optional[int] = None
     product_id: Optional[int] = None
     method_of_payment: Optional[str] = None
-    status: Optional[str] = None
+    status: Optional[SaleStatus] = None
 
 class SalesResponse(SalesBase):
     id: int
