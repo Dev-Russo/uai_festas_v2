@@ -34,3 +34,37 @@ Thumbs.db
 ## Databases (Evita subir o arquivo do banco se usar SQLite local)
 *.sqlite3
 *.db
+
+# Node modules
+/frontend/node_modules/
+
+# Build output
+/frontend/.next/
+/frontend/out/
+/frontend/.turbo/
+
+# Test coverage
+/frontend/coverage/
+
+# Local env files
+/frontend/.env
+/frontend/.env.*.local
+/frontend/.env.local
+
+# Log files
+/frontend/npm-debug.log*
+/frontend/yarn-debug.log*
+/frontend/yarn-error.log*
+/frontend/pnpm-debug.log*
+
+# Editor/IDE configs
+/frontend/.vscode/
+/frontend/.idea/
+/frontend/.DS_Store
+
+# Misc
+/frontend/.eslintcache
+/frontend/.parcel-cache
+/frontend/.cache
+/frontend/.vercel
+/frontend/.swc
