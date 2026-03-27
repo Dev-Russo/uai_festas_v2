@@ -205,6 +205,11 @@ O produtor não precisa mais registrar vendas manualmente. Ele exporta o relató
 - Linhas com erro não bloqueiam o restante da importação
 - Log de erros por linha para o produtor corrigir
 
+### Arrumar o Sales
+- Checkin não deve ser feito alterando o status e sim criando uma coluna nova no model para salvar o date-time do checkin
+- Adicionar Pagamento Pendente e Dinheito Devolvido no Enum.
+- Com base nessas alterações refatorar o Dashboard
+
 ### ✅ Critérios Mínimos de Aceitação
 - [ ] Upload de CSV da Sympla importa as vendas corretamente no banco
 - [ ] Upload do mesmo CSV duas vezes não duplica vendas
