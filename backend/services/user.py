@@ -1,19 +1,57 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from backend.dependencies import get_db
 from backend.models.user import User
-from backend.schemas.user import PasswordChange
-from backend.utils.security import verify_password, get_password_hash
+from backend.schemas.user import PasswordChange, UserCreate, UserUpdate, UserResponse
+from backend.utils.security import verify_password, get_password_hash, create_access_token
 from fastapi import HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
+
+def register_user(db: Session, user: UserCreate) -> UserResponse:
+    db_user = db.query(User).filter(User.email == user.email).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    hashed_password = get_password_hash(user.password)
+    new_user = User(name=user.name, email=user.email, role=user.role, is_active=user.is_active, hashed_password=hashed_password)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+def login_user(db: Session, user: OAuth2PasswordRequestForm) -> dict:
+    db_user = db.query(User).filter(User.email == user.username).first()
+    if not db_user or not verify_password(user.password, db_user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    access_token = create_access_token(
+        data={
+            "sub": db_user.email,
+            "role": db_user.role
+        }
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+def get_user_profile(db: Session, current_user: User) -> UserResponse:
+    return current_user
+
+def update_user_profile(db: Session, current_user: User, user_data: UserUpdate) -> UserResponse:
+    update_data = user_data.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Nenhum dado fornecido para atualização")
+    for key, value in update_data.items():
+        setattr(current_user, key, value)
+    try:
+        db.commit()
+        db.refresh(current_user)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="E-mail ou Nome de usuário já existe.")
+    return current_user
 
 def update_user_password(db: Session, user: User, data_password: PasswordChange) -> User:
-    
     if not verify_password(data_password.old_password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Senha Atual Errada")
-    
     user.hashed_password = get_password_hash(data_password.new_password)
-
     db.commit()
     db.refresh(user)
-
     return user
     

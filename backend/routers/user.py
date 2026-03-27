@@ -8,29 +8,16 @@ from backend.schemas.user import UserResponse, UserUpdate, PasswordChange
 
 router = APIRouter(prefix='/users', tags=['users'])
 
+
 @router.get('/me', response_model=UserResponse)
-def get_user(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> User:
-    
-    return current_user
+def get_user(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> UserResponse:
+    from backend.services.user import get_user_profile
+    return get_user_profile(db, current_user)
 
 @router.put('/me', response_model=UserResponse)
-def edit_user(user_data: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> User:
-    
-    update_data = user_data.model_dump(exclude_unset=True)
-    if not update_data:
-        raise HTTPException(status_code=400, detail="Nenhum dado fornecido para atualização")
-
-    for key, value in update_data.items():
-        setattr(current_user, key, value)
-
-    try:
-        db.commit()
-        db.refresh(current_user)
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="E-mail ou Nome de usuário já existe.") 
-
-    return current_user
+def edit_user(user_data: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> UserResponse:
+    from backend.services.user import update_user_profile
+    return update_user_profile(db, current_user, user_data)
 
 @router.put('/me/change-password', response_model=UserResponse)
 def change_password(
