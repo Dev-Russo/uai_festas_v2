@@ -67,15 +67,9 @@ def get_event_dashboard(
     ).order_by(
         func.date(Sales.sale_date).desc()
     ).limit(30).all()
-    
-    # Taxa de Check-in
-    total_checkin = db.query(Event).join(Product).join(Sales).filter(
-        Event.id == event_id, 
-        Sales.status == SaleStatus.check_in
-    ).count()
 
     # Taxa de cancelamento
-    cancellation_rate = (total_canceled_sales / (total_paid_sales + total_canceled_sales + total_checkin)) if (total_paid_sales + total_canceled_sales) > 0 else 0.0
+    cancellation_rate = (total_canceled_sales / (total_paid_sales + total_canceled_sales)) if (total_paid_sales + total_canceled_sales) > 0 else 0.0
 
     ## Formatar os resultados para o modelo de resposta
     sales_by_product = [{"product_name": name, "sales_count": count} for name, count in sales_by_product_raw]

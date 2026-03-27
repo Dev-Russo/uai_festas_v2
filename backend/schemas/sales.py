@@ -25,6 +25,7 @@ class SalesUpdate(BaseModel):
 class SalesResponse(SalesBase):
     id: int
     unique_code: uuid.UUID
+    checkin_at: Optional[datetime] = None
 
     
     model_config = ConfigDict(from_attributes=True)

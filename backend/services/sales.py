@@ -6,6 +6,7 @@ from backend.models.products import Product
 from backend.models.event import Event
 from backend.schemas.sales import SalesCreate, SalesUpdate, SalesResponse
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone
 
 
 def create_sale(db: Session, current_user: User, sale: SalesCreate) -> SalesResponse:
@@ -101,8 +102,12 @@ def check_in_sale(db: Session, current_user: User, sale_id: int) -> SalesRespons
     sale = db.query(Sales).filter(Sales.id == sale_id).first()
     if not sale:
         raise HTTPException(status_code=404, detail="Venda não encontrada")
-    
-    sale.status = "check_in"
+
+    # Check-in agora e um timestamp. O status da venda nao deve ser alterado.
+    if sale.status == "cancelled":
+        raise HTTPException(status_code=400, detail="Nao e possivel fazer check-in de venda cancelada")
+
+    sale.checkin_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(sale)
 

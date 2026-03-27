@@ -35,4 +35,4 @@ def get_event_by_id_route(event_id: int, db: Session = Depends(get_db), current_
 def delete_event(event_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     from backend.services.events import delete_event
     event = event_dep_get_event_by_id(event_id, db, current_user)
-    return delete_event(db, current_user, event)
+    return delete_event(db, event, current_user)
