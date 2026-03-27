@@ -9,7 +9,7 @@ from backend.services.events import get_event_by_id
 from backend.utils.security import get_current_user
 from fastapi import APIRouter, Depends
 
-router = APIRouter(prefix="/event/{event_id}/sales", tags=["sales"])
+router = APIRouter(prefix="/events/{event_id}/sales", tags=["sales"])
 
 @router.post("/", response_model=SalesResponse)
 def create_sale(
@@ -17,11 +17,9 @@ def create_sale(
     sale: SalesCreate, 
     db: Session = Depends(get_db), 
     current_user: User = Depends(get_current_user)
-    
-    
 ) -> SalesResponse:
-    
     from backend.services.sales import create_sale
+    # Passar event_id explicitamente se necessário futuramente
     return create_sale(db, current_user, sale)
 
 @router.get("/", response_model=list[SalesResponse])

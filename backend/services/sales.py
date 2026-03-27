@@ -12,7 +12,27 @@ def create_sale(db: Session, current_user: User, sale: SalesCreate) -> SalesResp
     if current_user.role != UserRole.admin and current_user.role != UserRole.producer:
         raise HTTPException(status_code=403, detail="Acesso negado")
 
-    db_sale = Sales(**sale.model_dump())
+    # Buscar produto
+    product = db.query(Product).filter(Product.id == sale.product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+
+    # Buscar evento
+    event = db.query(Event).filter(Event.id == product.event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+
+    # Preço vem do produto
+    db_sale = Sales(
+        buyer_name=sale.buyer_name,
+        buyer_email=sale.buyer_email,
+        product_id=sale.product_id,
+        method_of_payment=sale.method_of_payment,
+        sale_date=sale.sale_date,
+        status=sale.status,
+        price=product.price
+    )
+    
     db.add(db_sale)
     db.commit()
     db.refresh(db_sale)
