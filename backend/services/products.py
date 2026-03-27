@@ -1,5 +1,4 @@
 from sqlalchemy.orm import Session
-from backend.dependencies import get_db
 from backend.models.user import User
 from backend.models.event import Event
 from backend.models.products import Product

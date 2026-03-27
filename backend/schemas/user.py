@@ -1,10 +1,11 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from backend.enums.user import UserRole
 from typing import Optional
 
 class UserBase(BaseModel):
     name: str = Field(min_length=1, max_length=55) 
     email: EmailStr
-    role: str = "producer" 
+    role: UserRole = UserRole.producer
     is_active: bool = True
 
 class UserCreate(UserBase):

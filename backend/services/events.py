@@ -56,17 +56,23 @@ def get_event_by_id(db: Session, event_id: int, user: User):
     # Retorna o evento encontrado
     return event
 
-def delete_event(db: Session, user: User, event: Event):
-    # Se for admin, pode deletar permanentemente
-    if user.role == "admin":
-        db.delete(event)
-        db.commit()
-        return event  # Retorne o evento deletado (pode ser o objeto antes do delete)
-    # Se não for admin, só pode cancelar se for o dono
-    if event.owner.id != user.id:
+def delete_event(db: Session, event: Event, user: User):
+    # Só pode deletar se for admin ou dono do evento
+    if user.role != "admin" and user.id != event.owner.id:
         raise HTTPException(status_code=403, detail="Acesso negado")
-    # Soft delete: altera status para "Cancelado"
-    event.status = "Cancelado"
+    # Deleta o evento
+    db.delete(event)
+    db.commit()
+    # Retorna o evento deletado
+    return event
+
+def cancel_event(db: Session, event: Event, user: User):
+    # Só pode cancelar se for admin ou dono do evento
+    if user.role != "admin" and user.id != event.owner.id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    # Altera o status do evento para "cancelled"
+    event.status = "cancelled"
     db.commit()
     db.refresh(event)
+    # Retorna o evento cancelado
     return event
