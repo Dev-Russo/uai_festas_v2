@@ -16,3 +16,5 @@ class Product(Base):
 
     #relationship with event
     event = relationship("Event", back_populates="products")
+    #relationship with sales
+    sales = relationship("Sales", back_populates="product")
