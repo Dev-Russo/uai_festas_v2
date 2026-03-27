@@ -1,4 +1,4 @@
-from enums import Enum
+from enum import Enum
 
 class UserRole(str, Enum):
     producer = "producer"

@@ -10,6 +10,7 @@ sys.path.insert(0, abspath(dirname(dirname(dirname(__file__)))))
 
 from backend.database import Base 
 from backend.models.user import User
+from backend.models.sales import Sales
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

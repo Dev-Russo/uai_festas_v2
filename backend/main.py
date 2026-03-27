@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from backend.routers import auth, user, events, products
+from backend.routers import auth, user, events, products, sales
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -22,3 +22,4 @@ app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(events.router)
 app.include_router(products.router)
+app.include_router(sales.router)

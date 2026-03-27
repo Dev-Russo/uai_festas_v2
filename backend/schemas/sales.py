@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field, validator, EmailStr
+import uuid
+from pydantic import BaseModel, Field, validator, EmailStr, ConfigDict
 from typing import Optional
 from datetime import datetime
 from backend.enums.sales import SaleStatus
@@ -25,7 +26,7 @@ class SalesUpdate(BaseModel):
 
 class SalesResponse(SalesBase):
     id: int
-    unique_code: str
+    unique_code: uuid.UUID
 
-    class Config:
-        orm_mode = True
+    
+    model_config = ConfigDict(from_attributes=True)

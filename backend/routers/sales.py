@@ -5,16 +5,20 @@ from backend.models.products import Product
 from backend.models.event import Event
 from backend.schemas.sales import SalesCreate, SalesUpdate, SalesResponse
 from sqlalchemy.orm import Session
+from backend.services.events import get_event_by_id
 from backend.utils.security import get_current_user
 from fastapi import APIRouter, Depends
 
-router = APIRouter(prefix="event/{event_id}/sales", tags=["sales"])
+router = APIRouter(prefix="/event/{event_id}/sales", tags=["sales"])
 
 @router.post("/", response_model=SalesResponse)
 def create_sale(
+    event_id: int,
     sale: SalesCreate, 
     db: Session = Depends(get_db), 
     current_user: User = Depends(get_current_user)
+    
+    
 ) -> SalesResponse:
     
     from backend.services.sales import create_sale
@@ -22,6 +26,7 @@ def create_sale(
 
 @router.get("/", response_model=list[SalesResponse])
 def get_sales(
+    event_id: int,
     db: Session = Depends(get_db), 
     current_user: User = Depends(get_current_user)
 ) -> list[SalesResponse]:
