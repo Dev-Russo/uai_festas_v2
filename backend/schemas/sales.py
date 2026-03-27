@@ -25,6 +25,7 @@ class SalesUpdate(BaseModel):
 
 class SalesResponse(SalesBase):
     id: int
+    unique_code: str
 
     class Config:
         orm_mode = True
