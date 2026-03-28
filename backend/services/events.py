@@ -7,7 +7,8 @@ from fastapi import HTTPException
 
 def create_event(db: Session, event_data: dict, user: User):
     # Cria um novo evento associando ao usuário
-    new_event = Event(**event_data.model_dump(), owner=user)
+    payload = event_data.model_dump(exclude_none=True)
+    new_event = Event(**payload, owner=user)
     # Adiciona o evento à sessão do banco
     db.add(new_event)
     # Salva no banco
@@ -19,7 +20,7 @@ def create_event(db: Session, event_data: dict, user: User):
 
 def update_event(db: Session, event: Event, user: User, event_data: dict):
     # Atualiza os campos do evento com os dados recebidos
-    for key, value in event_data.model_dump(exclude_unset=True).items():
+    for key, value in event_data.model_dump(exclude_unset=True, exclude_none=True).items():
         setattr(event, key, value)
     # Se não for admin, só pode atualizar se for o dono
     if user.role != "admin" and user.id != event.owner.id:

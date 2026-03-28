@@ -19,8 +19,7 @@ def create_sale(
     current_user: User = Depends(get_current_user)
 ) -> SalesResponse:
     from services.sales import create_sale
-    # Passar event_id explicitamente se necessário futuramente
-    return create_sale(db, current_user, sale)
+    return create_sale(db, current_user, sale, event_id)
 
 @router.get("/", response_model=list[SalesResponse])
 def get_sales(
@@ -30,17 +29,18 @@ def get_sales(
 ) -> list[SalesResponse]:
     
     from services.sales import get_sales
-    return get_sales(db, current_user)
+    return get_sales(db, current_user, event_id)
 
 @router.get("/{sale_id}", response_model=SalesResponse)
 def get_sale_by_id(
+    event_id: int,
     sale_id: int, 
     db: Session = Depends(get_db), 
     current_user: User = Depends(get_current_user)
 ) -> SalesResponse:
     
     from services.sales import get_sale_by_id
-    return get_sale_by_id(db, current_user, sale_id)
+    return get_sale_by_id(db, current_user, sale_id, event_id)
 
 @router.put("/{sale_id}", response_model=SalesResponse)
 def update_sale(
@@ -65,20 +65,22 @@ def delete_sale(
 
 @router.patch("/{sale_id}/check-in", response_model=SalesResponse)
 def check_in_sale(
+    event_id: int,
     sale_id: int, 
     db: Session = Depends(get_db), 
     current_user: User = Depends(get_current_user)
 ) -> SalesResponse:
     
     from services.sales import check_in_sale
-    return check_in_sale(db, current_user, sale_id)
+    return check_in_sale(db, current_user, sale_id, event_id)
 
 @router.patch("/{sale_id}/cancel", response_model=SalesResponse)
 def cancel_sale(
+    event_id: int,
     sale_id: int, 
     db: Session = Depends(get_db), 
     current_user: User = Depends(get_current_user)
 ) -> SalesResponse:
     
     from services.sales import cancel_sale
-    return cancel_sale(db, current_user, sale_id)
+    return cancel_sale(db, current_user, sale_id, event_id)

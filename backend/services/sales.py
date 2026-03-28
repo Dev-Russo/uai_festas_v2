@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 
 
-def create_sale(db: Session, current_user: User, sale: SalesCreate) -> SalesResponse:
+def create_sale(db: Session, current_user: User, sale: SalesCreate, event_id: int) -> SalesResponse:
     if current_user.role != UserRole.admin and current_user.role != UserRole.producer:
         raise HTTPException(status_code=403, detail="Acesso negado")
 
@@ -22,6 +22,9 @@ def create_sale(db: Session, current_user: User, sale: SalesCreate) -> SalesResp
     event = db.query(Event).filter(Event.id == product.event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
+
+    if product.event_id != event_id:
+        raise HTTPException(status_code=400, detail="Produto nao pertence ao evento informado")
 
     # Preço vem do produto
     db_sale = Sales(
@@ -40,25 +43,45 @@ def create_sale(db: Session, current_user: User, sale: SalesCreate) -> SalesResp
 
     return db_sale
 
-def get_sales(db: Session, current_user: User) -> SalesResponse:
+def get_sales(db: Session, current_user: User, event_id: int) -> SalesResponse:
     if current_user.role == UserRole.admin:
-        sales = db.query(Sales).all()
+        sales = db.query(Sales).join(Sales.product).filter(Product.event_id == event_id).all()
 
     elif current_user.role == UserRole.producer:
-        sales = db.query(Sales).join(Sales.product).join(Product.event).filter(Event.user_id == current_user.id).all()
+        sales = db.query(Sales).join(Sales.product).filter(Product.event_id == event_id).all()
 
     else:
-        sales = db.query(Sales).filter(Sales.buyer_email == current_user.email).all()
+        sales = (
+            db.query(Sales)
+            .join(Sales.product)
+            .filter(Sales.buyer_email == current_user.email, Product.event_id == event_id)
+            .all()
+        )
 
     return sales
 
-def get_sale_by_id(db: Session, current_user: User, sale_id: int) -> SalesResponse:
+def get_sale_by_id(db: Session, current_user: User, sale_id: int, event_id: int) -> SalesResponse:
     if current_user.role == UserRole.admin:
-        sale = db.query(Sales).filter(Sales.id == sale_id).first()
+        sale = (
+            db.query(Sales)
+            .join(Sales.product)
+            .filter(Sales.id == sale_id, Product.event_id == event_id)
+            .first()
+        )
     elif current_user.role == UserRole.producer:
-        sale = db.query(Sales).join(Sales.product).join(Product.event).filter(Sales.id == sale_id, Event.user_id == current_user.id).first()
+        sale = (
+            db.query(Sales)
+            .join(Sales.product)
+            .filter(Sales.id == sale_id, Product.event_id == event_id)
+            .first()
+        )
     else:
-        sale = db.query(Sales).filter(Sales.id == sale_id, Sales.buyer_email == current_user.email).first()
+        sale = (
+            db.query(Sales)
+            .join(Sales.product)
+            .filter(Sales.id == sale_id, Sales.buyer_email == current_user.email, Product.event_id == event_id)
+            .first()
+        )
 
     if not sale:
         raise HTTPException(status_code=404, detail="Venda não encontrada")
@@ -81,11 +104,16 @@ def update_sale(db: Session, current_user: User, sale_id: int, sale_data: SalesU
 
     return sale
 
-def cancel_sale(db: Session, current_user: User, sale_id: int) -> SalesResponse:
+def cancel_sale(db: Session, current_user: User, sale_id: int, event_id: int) -> SalesResponse:
     if current_user.role != UserRole.admin and current_user.role != UserRole.producer:
         raise HTTPException(status_code=403, detail="Acesso negado")
     
-    sale = db.query(Sales).filter(Sales.id == sale_id).first()
+    sale = (
+        db.query(Sales)
+        .join(Sales.product)
+        .filter(Sales.id == sale_id, Product.event_id == event_id)
+        .first()
+    )
     if not sale:
         raise HTTPException(status_code=404, detail="Venda não encontrada")
     
@@ -95,17 +123,25 @@ def cancel_sale(db: Session, current_user: User, sale_id: int) -> SalesResponse:
 
     return sale
 
-def check_in_sale(db: Session, current_user: User, sale_id: int) -> SalesResponse:
+def check_in_sale(db: Session, current_user: User, sale_id: int, event_id: int) -> SalesResponse:
     if current_user.role != UserRole.admin and current_user.role != UserRole.producer:
         raise HTTPException(status_code=403, detail="Acesso negado")
     
-    sale = db.query(Sales).filter(Sales.id == sale_id).first()
+    sale = (
+        db.query(Sales)
+        .join(Sales.product)
+        .filter(Sales.id == sale_id, Product.event_id == event_id)
+        .first()
+    )
     if not sale:
         raise HTTPException(status_code=404, detail="Venda não encontrada")
 
     # Check-in agora e um timestamp. O status da venda nao deve ser alterado.
     if sale.status == "cancelled":
         raise HTTPException(status_code=400, detail="Nao e possivel fazer check-in de venda cancelada")
+    
+    if sale.checkin_at is not None:
+        raise HTTPException(status_code=400, detail="Venda ja foi check-in")
 
     sale.checkin_at = datetime.now(timezone.utc)
     db.commit()

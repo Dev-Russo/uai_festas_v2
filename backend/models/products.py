@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func 
 from database import Base
@@ -11,6 +11,8 @@ class Product(Base):
     start_selling_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=True)
     end_selling_date = Column(DateTime(timezone=True), default=None)
     price = Column(Integer, nullable=False)
+    available_quantity = Column(Integer, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False) # 1 para ativo, 0 para inativo
 
     event_id = Column(Integer, ForeignKey("event.id"), nullable=False)
 

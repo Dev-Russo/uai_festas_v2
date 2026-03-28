@@ -11,6 +11,7 @@ class Event(Base):
     status = Column(String, index=True, default="Not Realized", nullable=False) #Não Realizado, Realizado, Cancelado.
     event_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     description = Column(String, nullable=True)
+    location = Column(String, nullable=True)
     sales_start_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)

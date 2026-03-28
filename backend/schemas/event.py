@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from datetime import datetime
 from typing import Optional
 
@@ -9,6 +9,7 @@ class EventBase(BaseModel):
     status: str = Field(default="Not Realized", max_length=20) #Não Realizado, Realizado, Cancelado.
     event_date: datetime = Field(default_factory=datetime.utcnow)
     sales_start_date: datetime = Field(default_factory=datetime.utcnow)
+    location: Optional[str] = Field(default=None, min_length=5, max_length=200)
 
 class EventCreate(EventBase):
     pass
@@ -19,7 +20,8 @@ class EventUpdate(BaseModel):
     status: Optional[str] = Field(default=None, max_length=20) #Não Realizado, Realizado, Cancelado.
     event_date: Optional[datetime] = None
     sales_start_date: Optional[datetime] = None
-
+    location: Optional[str] = Field(default=None, max_length=200)
+    
 class EventResponse(EventBase):
     id: int
     user_id: int
