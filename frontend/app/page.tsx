@@ -1,65 +1,106 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { getToken, saveToken } from "./lib/auth";
+import { login } from "./lib/api";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (getToken()) {
+      router.replace("/events");
+    }
+  }, [router]);
+
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const token = await login(email, password);
+      saveToken(token);
+      router.push("/events");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro inesperado ao autenticar.";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <main
+      className="page-shell grid grid-cols-1 lg:grid-cols-[1.1fr_1fr]"
+      style={{
+        minHeight: "calc(100vh - 4rem)",
+        gap: "1rem",
+        alignItems: "center",
+      }}
+    >
+      <section style={{ padding: "0.5rem 0.6rem" }}>
+        <p style={{ margin: 0, fontFamily: "var(--font-plex-mono)", color: "var(--app-accent-strong)" }}>
+          UAI FESTAS PLATFORM
+        </p>
+        <h1 style={{ fontSize: "clamp(2rem, 4vw, 3.4rem)", lineHeight: 1.05, margin: "0.6rem 0 0.8rem" }}>
+          Seu painel de eventos,
+          <br />
+          vendas e decisao rapida.
+        </h1>
+        <p className="muted" style={{ maxWidth: 520, fontSize: "1.02rem" }}>
+          Entre para acompanhar os seus eventos em tempo real, entender resultados e agir rapido com base nos
+          dados do seu dashboard.
+        </p>
+      </section>
+
+      <section className="card" style={{ padding: "1.4rem" }}>
+        <h2 style={{ margin: 0 }}>Entrar na sua conta</h2>
+        <p className="muted" style={{ marginTop: "0.35rem", marginBottom: "1rem" }}>
+          Use o mesmo email e senha do seu backend.
+        </p>
+
+        <form onSubmit={handleLogin} style={{ display: "grid", gap: "0.8rem" }}>
+          <label style={{ display: "grid", gap: "0.4rem" }}>
+            <span>Email</span>
+            <input
+              className="input-field"
+              type="email"
+              placeholder="voce@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+          </label>
+
+          <label style={{ display: "grid", gap: "0.4rem" }}>
+            <span>Senha</span>
+            <input
+              className="input-field"
+              type="password"
+              placeholder="********"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </label>
+
+          {error ? (
+            <p style={{ margin: 0, color: "var(--app-danger)", fontSize: "0.92rem" }}>
+              {error}
+            </p>
+          ) : null}
+
+          <button type="submit" className="button-primary" disabled={loading}>
+            {loading ? "Entrando..." : "Entrar"}
+          </button>
+        </form>
+      </section>
+    </main>
   );
 }
