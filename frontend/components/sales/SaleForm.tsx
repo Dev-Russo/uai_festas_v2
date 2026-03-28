@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { CreateSaleDTO, PaymentMethod, Product } from "@/types";
@@ -17,10 +17,7 @@ export function SaleForm({
     buyerName: "",
     buyerEmail: "",
     paymentMethod: "pix",
-    price: 0,
   });
-
-  const selectedProduct = useMemo(() => products.find((p) => String(p.id) === payload.productId), [payload.productId, products]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -35,8 +32,7 @@ export function SaleForm({
           className="input-field"
           value={payload.productId}
           onChange={(e) => {
-            const product = products.find((item) => String(item.id) === e.target.value);
-            setPayload((prev) => ({ ...prev, productId: e.target.value, price: product?.price ?? 0 }));
+            setPayload((prev) => ({ ...prev, productId: e.target.value }));
           }}
         >
           <option value="">Selecione</option>
@@ -45,6 +41,7 @@ export function SaleForm({
           ))}
         </select>
       </label>
+      {products.length === 0 ? <small className="muted">Nenhum lote disponivel para este evento.</small> : null}
       <Input label="Comprador" value={payload.buyerName} onChange={(e) => setPayload((v) => ({ ...v, buyerName: e.target.value }))} />
       <Input label="Email" type="email" value={payload.buyerEmail} onChange={(e) => setPayload((v) => ({ ...v, buyerEmail: e.target.value }))} />
       <label style={{ display: "grid", gap: "0.35rem" }}>
@@ -60,14 +57,7 @@ export function SaleForm({
           <option value="cash">Dinheiro</option>
         </select>
       </label>
-      <Input
-        label="Valor"
-        type="number"
-        value={String(payload.price)}
-        onChange={(e) => setPayload((v) => ({ ...v, price: Number(e.target.value) }))}
-      />
-      {selectedProduct ? <small className="muted">Valor sugerido pelo lote: R$ {selectedProduct.price}</small> : null}
-      <Button type="submit">Registrar venda</Button>
+      <Button type="submit" disabled={!payload.productId || products.length === 0}>Vender ingresso</Button>
     </form>
   );
 }

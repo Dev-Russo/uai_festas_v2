@@ -37,6 +37,23 @@ function normalizeDashboard(data: Record<string, unknown>): DashboardData {
   };
 }
 
+function normalizeSale(item: Record<string, unknown>): Sale {
+  const code = item.unique_code ?? item.code;
+  const checkin = item.checkin_at ?? item.checkinAt ?? null;
+  return {
+    id: String(item.id ?? ""),
+    productId: String(item.product_id ?? item.productId ?? ""),
+    buyerName: String(item.buyer_name ?? item.buyerName ?? ""),
+    buyerEmail: String(item.buyer_email ?? item.buyerEmail ?? ""),
+    paymentMethod: String(item.method_of_payment ?? item.paymentMethod ?? "pix"),
+    price: Number(item.price ?? 0),
+    status: String(item.status ?? "pending") as Sale["status"],
+    code: code ? String(code) : undefined,
+    createdAt: String(item.sale_date ?? item.createdAt ?? ""),
+    checkinAt: checkin ? String(checkin) : null,
+  };
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const isBrowser = typeof window !== "undefined";
   const token = isBrowser ? window.localStorage.getItem("token") : null;
@@ -120,8 +137,14 @@ export const api = {
     request(`/events/${eventId}/products/${productId}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteProduct: (eventId: string, productId: string) => request(`/events/${eventId}/products/${productId}`, { method: "DELETE" }),
 
-  getSales: (eventId: string) => request<Sale[]>(`/events/${eventId}/sales/`),
-  getSale: (eventId: string, saleId: string) => request<Sale>(`/events/${eventId}/sales/${saleId}`),
+  getSales: async (eventId: string) => {
+    const data = await request<Record<string, unknown>[]>(`/events/${eventId}/sales/`);
+    return data.map((item) => normalizeSale(item));
+  },
+  getSale: async (eventId: string, saleId: string) => {
+    const data = await request<Record<string, unknown>>(`/events/${eventId}/sales/${saleId}`);
+    return normalizeSale(data);
+  },
   createSale: (eventId: string, data: CreateSaleDTO) =>
     request(`/events/${eventId}/sales/`, {
       method: "POST",

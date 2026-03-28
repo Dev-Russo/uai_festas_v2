@@ -77,5 +77,4 @@ export interface CreateSaleDTO {
   buyerName: string;
   buyerEmail: string;
   paymentMethod: PaymentMethod;
-  price: number;
 }
