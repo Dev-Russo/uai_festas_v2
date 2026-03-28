@@ -10,7 +10,7 @@ export function EventCard({ event }: { event: Event }) {
       <h3>{event.name}</h3>
       <p><MapPin size={14} /> {event.location || "Local nao informado"}</p>
       <p><CalendarDays size={14} /> {event.event_date ? new Date(event.event_date).toLocaleDateString("pt-BR") : "Data nao informada"}</p>
-      <Link href={`/events/${event.id}`} className="event-link">Ver detalhes</Link>
+      <Link href={`/events/${event.id}/dashboard`} className="event-link">Abrir dashboard</Link>
     </article>
   );
 }

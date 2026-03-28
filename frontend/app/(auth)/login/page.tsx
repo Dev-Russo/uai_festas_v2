@@ -42,7 +42,7 @@ export default function LoginPage() {
       <section className="auth-brand-panel">
         <div className="auth-brand-overlay" />
         <div className="auth-brand-content">
-          <p><Ticket size={20} /> EventOS</p>
+          <p><Ticket size={20} /> Uai Festas</p>
           <h1>Controle completo de eventos em uma experiencia premium.</h1>
           <span>Seu backstage digital para vendas, lotes e decisao orientada por dados.</span>
         </div>
@@ -51,7 +51,7 @@ export default function LoginPage() {
       <section className="auth-form-panel">
         <form className="auth-form card" onSubmit={handleSubmit}>
           <div>
-            <p className="auth-logo">EventOS</p>
+            <p className="auth-logo">Uai Festas</p>
             <h2>Bem-vindo de volta</h2>
             <small>Faca login para gerenciar seus eventos</small>
           </div>

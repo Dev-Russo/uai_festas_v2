@@ -20,7 +20,7 @@ export function Sidebar({ userName, role }: { userName?: string; role?: string }
     <aside className="sidebar-shell">
       <div>
         <div className="sidebar-logo">
-          <Ticket size={18} /> <span>EventOS</span>
+          <Ticket size={18} /> <span>Uai Festas</span>
         </div>
         <div className="sidebar-user">
           <Avatar name={userName} />

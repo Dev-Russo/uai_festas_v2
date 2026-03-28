@@ -18,7 +18,7 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EventOS",
+  title: "Uai Festas",
   description: "Sistema de gestao de eventos",
 };
 

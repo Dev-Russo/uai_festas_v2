@@ -54,7 +54,7 @@ export default function RegisterPage() {
       <section className="auth-brand-panel">
         <div className="auth-brand-overlay" />
         <div className="auth-brand-content">
-          <p>EventOS</p>
+          <p>Uai Festas</p>
           <h1>Comece agora e tenha seu centro de comando para eventos.</h1>
           <span>Cadastro rapido para voce acompanhar vendas e performance em minutos.</span>
         </div>
