@@ -222,12 +222,22 @@ textarea {
   border-right: 1px solid var(--border);
   background: #fff;
   padding: 0.65rem;
-  display: grid;
-  grid-template-rows: auto auto 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: 100%;
+  min-height: 100vh;
+}
+
+.sidebar-top {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.sidebar-nav-wrapper {
+  width: 100%;
 }
 
 .sidebar-logo {
@@ -258,23 +268,27 @@ textarea {
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: flex-start;
-  gap: 0.35rem;
-  align-self: start;
+  width: 100%;
 }
 
 .sidebar-nav a {
-  display: inline-flex;
-  gap: 0.4rem;
+  display: flex;
+  gap: 10px;
   align-items: center;
-  padding: 0.5rem 0.52rem;
+  padding: 10px 16px;
   border-radius: 10px;
   color: var(--text-secondary);
   border-left: 3px solid transparent;
   font-size: 0.88rem;
   line-height: 1.1;
-  width: max-content;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.sidebar-nav a:last-child {
+  margin-bottom: 0;
 }
 
 .sidebar-nav a:hover {
@@ -298,8 +312,8 @@ textarea {
   gap: 0.4rem;
   cursor: pointer;
   font-size: 0.9rem;
-  width: max-content;
-  align-self: end;
+  width: 100%;
+  justify-content: center;
 }
 
 .logout-btn:hover {

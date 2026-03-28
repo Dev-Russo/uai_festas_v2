@@ -18,7 +18,7 @@ export function Sidebar({ userName, role }: { userName?: string; role?: string }
 
   return (
     <aside className="sidebar-shell">
-      <div>
+      <div className="sidebar-top">
         <div className="sidebar-logo">
           <Ticket size={18} /> <span>Uai Festas</span>
         </div>
@@ -31,29 +31,33 @@ export function Sidebar({ userName, role }: { userName?: string; role?: string }
         </div>
       </div>
 
-      <nav className="sidebar-nav">
-        {items.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-          return (
-            <Link href={item.href} key={item.href} className={isActive ? "active" : ""}>
-              <Icon size={18} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      <div className="sidebar-nav-wrapper">
+        <nav className="sidebar-nav">
+          {items.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            return (
+              <Link href={item.href} key={item.href} className={isActive ? "active" : ""}>
+                <Icon size={20} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
 
-      <button
-        className="logout-btn"
-        onClick={() => {
-          clearToken();
-          router.push("/login");
-        }}
-        type="button"
-      >
-        <LogOut size={16} /> Sair
-      </button>
+      <div style={{ marginTop: "auto" }}>
+        <button
+          className="logout-btn"
+          onClick={() => {
+            clearToken();
+            router.push("/login");
+          }}
+          type="button"
+        >
+          <LogOut size={20} /> Sair
+        </button>
+      </div>
     </aside>
   );
 }
