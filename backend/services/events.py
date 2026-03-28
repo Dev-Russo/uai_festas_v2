@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from backend.dependencies import get_db
-from backend.models.user import User
-from backend.models.event import Event
+from dependencies import get_db
+from models.user import User
+from models.event import Event
 from fastapi import HTTPException
 
 

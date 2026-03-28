@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends
-from backend.dependencies.event import get_event_by_id
+from dependencies.event import get_event_by_id
 from sqlalchemy.orm import Session
-from backend.dependencies import get_db
-from backend.utils.security import get_current_user
-from backend.models.user import User
-from backend.models.event import Event
-from backend.schemas.event import EventCreate, EventUpdate, EventResponse
-from backend.schemas.products import ProductCreate, ProductResponse, ProductUpdate
+from dependencies import get_db
+from utils.security import get_current_user
+from models.user import User
+from models.event import Event
+from schemas.event import EventCreate, EventUpdate, EventResponse
+from schemas.products import ProductCreate, ProductResponse, ProductUpdate
 
 router = APIRouter(prefix="/events/{event_id}/products", tags=["products"])
 
@@ -18,7 +18,7 @@ def create_products(
     user: User = Depends(get_current_user)
     ):
     
-    from backend.services.products import create_product
+    from services.products import create_product
     return create_product(db, product_data, event, user)
 
 @router.put("/{id_product}", response_model=ProductResponse)
@@ -30,7 +30,7 @@ def update_products(
     user: User = Depends(get_current_user)
 
 ):
-    from backend.services.products import update_product, get_product_by_id
+    from services.products import update_product, get_product_by_id
     product = get_product_by_id(db, user, event, id_product)
     return update_product(db, product, product_data, event, user)
 
@@ -40,7 +40,7 @@ def get_products(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    from backend.services.products import get_products
+    from services.products import get_products
     return get_products(db, user, event)
 
 @router.get("/{id_product}", response_model=ProductResponse)
@@ -50,7 +50,7 @@ def get_product_by_id(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    from backend.services.products import get_product_by_id
+    from services.products import get_product_by_id
     return get_product_by_id(db, user, event, id_product)
 
 @router.delete("/{id_product}", response_model=ProductResponse)
@@ -60,5 +60,5 @@ def delete_product(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
-    from backend.services.products import delete_product
+    from services.products import delete_product
     return delete_product(db, user, event, id_product)

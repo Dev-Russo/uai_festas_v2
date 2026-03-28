@@ -1,9 +1,9 @@
 from fastapi import Depends, HTTPException, Path
 from sqlalchemy.orm import Session
-from backend.models.event import Event
-from backend.models.user import User
-from backend.utils.security import get_current_user
-from backend.dependencies.db import get_db
+from models.event import Event
+from models.user import User
+from utils.security import get_current_user
+from dependencies.db import get_db
 
 def get_event_by_id(
     event_id: int = Path(..., title="ID do evento"),

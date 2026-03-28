@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from backend.models.user import User
-from backend.models.event import Event
-from backend.models.products import Product
+from models.user import User
+from models.event import Event
+from models.products import Product
 from fastapi import HTTPException
 
 def create_product(db: Session, product_data: dict, event: Event, user: User):

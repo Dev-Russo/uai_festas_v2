@@ -1,10 +1,10 @@
 from fastapi import HTTPException
-from backend.enums.user import UserRole
-from backend.models.sales import Sales
-from backend.models.user import User
-from backend.models.products import Product
-from backend.models.event import Event
-from backend.schemas.sales import SalesCreate, SalesUpdate, SalesResponse
+from enums.user import UserRole
+from models.sales import Sales
+from models.user import User
+from models.products import Product
+from models.event import Event
+from schemas.sales import SalesCreate, SalesUpdate, SalesResponse
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 

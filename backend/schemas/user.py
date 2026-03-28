@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
-from backend.enums.user import UserRole
+from enums.user import UserRole
 from typing import Optional
 
 class UserBase(BaseModel):

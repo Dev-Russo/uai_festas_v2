@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from backend.dependencies import get_db
-from backend.models.user import User
-from backend.schemas.user import PasswordChange, UserCreate, UserUpdate, UserResponse
-from backend.utils.security import verify_password, get_password_hash, create_access_token
+from dependencies import get_db
+from models.user import User
+from schemas.user import PasswordChange, UserCreate, UserUpdate, UserResponse
+from utils.security import verify_password, get_password_hash, create_access_token
 from fastapi import HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 

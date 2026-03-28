@@ -8,9 +8,9 @@ from alembic import context
 
 sys.path.insert(0, abspath(dirname(dirname(dirname(__file__)))))
 
-from backend.database import Base 
-from backend.models.user import User
-from backend.models.sales import Sales
+from database import Base 
+from models.user import User
+from models.sales import Sales
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -64,9 +64,9 @@ def run_migrations_online() -> None:
     garantindo que o Alembic use as configurações do arquivo .env.
     """
     
-    # Importa o engine que você já configurou no backend/database.py
+    # Importa o engine que você já configurou no database.py
     # Isso faz com que o Alembic ignore a URL vazia no alembic.ini
-    from backend.database import engine
+    from database import engine
 
     # Cria uma conexão a partir do engine da aplicação
     with engine.connect() as connection:

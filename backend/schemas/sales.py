@@ -2,7 +2,7 @@ import uuid
 from pydantic import BaseModel, Field, validator, EmailStr, ConfigDict
 from typing import Optional
 from datetime import datetime
-from backend.enums.sales import SaleStatus
+from enums.sales import SaleStatus
 
 class SalesBase(BaseModel):
     buyer_name: str

@@ -1,13 +1,13 @@
-from backend.schemas.dashboard import DashboardResponse
-from backend.dependencies import get_db
-from backend.utils.security import get_current_user
+from schemas.dashboard import DashboardResponse
+from dependencies import get_db
+from utils.security import get_current_user
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from backend.models.user import User
-from backend.models.event import Event
-from backend.models.sales import Sales
-from backend.models.products import Product
-from backend.enums.sales import SaleStatus
+from models.user import User
+from models.event import Event
+from models.sales import Sales
+from models.products import Product
+from enums.sales import SaleStatus
 from sqlalchemy import func
 
 router = APIRouter(prefix="/events/{event_id}/dashboard", tags=["Dashboard"])
