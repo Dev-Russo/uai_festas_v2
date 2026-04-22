@@ -3,11 +3,15 @@ import {
   CreateCommissionerDTO,
   CreateEventDTO,
   CreateProductDTO,
+  CreateProductGroupDTO,
   CreateSaleDTO,
   DashboardData,
   Event,
   Product,
+  ProductGroup,
+  ProductGroupMembership,
   Sale,
+  UpdateProductGroupDTO,
   User,
   UserType,
 } from "@/types";
@@ -91,6 +95,36 @@ function normalizeCommissioner(item: Record<string, unknown>): Commissioner {
   };
 }
 
+function normalizeProductGroupMembership(item: Record<string, unknown>): ProductGroupMembership {
+  const product = (item.product ?? {}) as Record<string, unknown>;
+  return {
+    productId: String(item.product_id ?? item.productId ?? ""),
+    groupId: String(item.group_id ?? item.groupId ?? ""),
+    isActive: Boolean(item.is_active ?? item.isActive ?? true),
+    product: {
+      id: String(product.id ?? ""),
+      name: String(product.name ?? ""),
+      price: Number(product.price ?? 0),
+      isActive: Boolean(product.is_active ?? product.isActive ?? true),
+    },
+  };
+}
+
+function normalizeProductGroup(item: Record<string, unknown>): ProductGroup {
+  const childrenRaw = Array.isArray(item.children) ? item.children : [];
+  const membershipsRaw = Array.isArray(item.memberships) ? item.memberships : [];
+  return {
+    id: String(item.id ?? ""),
+    name: String(item.name ?? ""),
+    eventId: String(item.event_id ?? item.eventId ?? ""),
+    parentGroupId: item.parent_group_id != null ? String(item.parent_group_id) : null,
+    isDefault: Boolean(item.is_default ?? item.isDefault ?? false),
+    isActive: Boolean(item.is_active ?? item.isActive ?? true),
+    children: childrenRaw.map((child) => normalizeProductGroup(child as Record<string, unknown>)),
+    memberships: membershipsRaw.map((membership) => normalizeProductGroupMembership(membership as Record<string, unknown>)),
+  };
+}
+
 export const api = {
   login: async (identifier: string, password: string): Promise<{ token: string; userType: UserType; eventId: number | null }> => {
     const body = new URLSearchParams();
@@ -150,6 +184,51 @@ export const api = {
   updateProduct: (eventId: string, productId: string, data: Partial<Product>) =>
     request(`/events/${eventId}/products/${productId}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteProduct: (eventId: string, productId: string) => request(`/events/${eventId}/products/${productId}`, { method: "DELETE" }),
+
+  getProductGroups: async (eventId: string) => {
+    const data = await request<Record<string, unknown>[]>(`/events/${eventId}/product-groups/`);
+    return data.map((item) => normalizeProductGroup(item));
+  },
+  createProductGroup: async (eventId: string, data: CreateProductGroupDTO) => {
+    const result = await request<Record<string, unknown>>(`/events/${eventId}/product-groups/`, {
+      method: "POST",
+      body: JSON.stringify({
+        name: data.name,
+        parent_group_id: data.parentGroupId != null && data.parentGroupId !== "" ? Number(data.parentGroupId) : null,
+        is_default: data.isDefault ?? false,
+      }),
+    });
+    return normalizeProductGroup(result);
+  },
+  updateProductGroup: async (eventId: string, groupId: string, data: UpdateProductGroupDTO) => {
+    const body: Record<string, unknown> = {};
+    if (data.name !== undefined) body.name = data.name;
+    if (data.isDefault !== undefined) body.is_default = data.isDefault;
+    if (data.isActive !== undefined) body.is_active = data.isActive;
+    const result = await request<Record<string, unknown>>(`/events/${eventId}/product-groups/${groupId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+    return normalizeProductGroup(result);
+  },
+  deleteProductGroup: (eventId: string, groupId: string) =>
+    request(`/events/${eventId}/product-groups/${groupId}`, { method: "DELETE" }),
+  addProductToGroup: async (eventId: string, groupId: string, productId: string) => {
+    const result = await request<Record<string, unknown>>(
+      `/events/${eventId}/product-groups/${groupId}/products?product_id=${encodeURIComponent(productId)}`,
+      { method: "POST" },
+    );
+    return normalizeProductGroupMembership(result);
+  },
+  toggleProductInGroup: async (eventId: string, groupId: string, productId: string, isActive: boolean) => {
+    const result = await request<Record<string, unknown>>(`/events/${eventId}/product-groups/${groupId}/products/${productId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ is_active: isActive }),
+    });
+    return normalizeProductGroupMembership(result);
+  },
+  removeProductFromGroup: (eventId: string, groupId: string, productId: string) =>
+    request(`/events/${eventId}/product-groups/${groupId}/products/${productId}`, { method: "DELETE" }),
 
   getSales: async (eventId: string) => {
     const data = await request<Record<string, unknown>[]>(`/events/${eventId}/sales/`);

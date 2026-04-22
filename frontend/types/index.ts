@@ -109,3 +109,40 @@ export interface CreateSaleDTO {
   buyerEmail: string;
   paymentMethod: PaymentMethod;
 }
+
+export interface ProductGroupProductSummary {
+  id: string;
+  name: string;
+  price: number;
+  isActive: boolean;
+}
+
+export interface ProductGroupMembership {
+  productId: string;
+  groupId: string;
+  isActive: boolean;
+  product: ProductGroupProductSummary;
+}
+
+export interface ProductGroup {
+  id: string;
+  name: string;
+  eventId: string;
+  parentGroupId: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+  children: ProductGroup[];
+  memberships: ProductGroupMembership[];
+}
+
+export interface CreateProductGroupDTO {
+  name: string;
+  parentGroupId?: string | null;
+  isDefault?: boolean;
+}
+
+export interface UpdateProductGroupDTO {
+  name?: string;
+  isDefault?: boolean;
+  isActive?: boolean;
+}

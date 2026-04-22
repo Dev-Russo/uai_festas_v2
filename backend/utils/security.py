@@ -50,6 +50,40 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
     return user
 
+def get_current_event_manager(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """Retorna User (dono/admin) ou Commissioner com full_access. Usado em rotas de gestão do evento."""
+    from models.commissioner import Commissioner
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, key=settings.SECRET_KEY, algorithms=settings.ALGORITHM)
+        sub: str = payload.get("sub")
+        user_type: str = payload.get("user_type", "user")
+        if sub is None:
+            raise credentials_exception
+    except Exception:
+        raise credentials_exception
+
+    if user_type == "user":
+        user = db.query(User).filter(User.email == sub).first()
+        if user is None:
+            raise credentials_exception
+        return user
+
+    if user_type == "commissioner":
+        commissioner = db.query(Commissioner).filter(Commissioner.username == sub).first()
+        if commissioner is None or not commissioner.is_active:
+            raise credentials_exception
+        if not commissioner.full_access:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso negado")
+        return commissioner
+
+    raise credentials_exception
+
+
 def get_current_commissioner(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     from models.commissioner import Commissioner
     credentials_exception = HTTPException(
