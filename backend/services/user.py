@@ -19,16 +19,43 @@ def register_user(db: Session, user: UserCreate) -> UserResponse:
     return new_user
 
 def login_user(db: Session, user: OAuth2PasswordRequestForm) -> dict:
+    from models.commissioner import Commissioner
+
+    # Tenta login como usuário (admin/producer) pelo email
     db_user = db.query(User).filter(User.email == user.username).first()
-    if not db_user or not verify_password(user.password, db_user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    access_token = create_access_token(
-        data={
-            "sub": db_user.email,
-            "role": db_user.role
+    if db_user:
+        if not verify_password(user.password, db_user.hashed_password):
+            raise HTTPException(status_code=401, detail="Email ou senha invalidos")
+        access_token = create_access_token(
+            data={"sub": db_user.email, "role": db_user.role, "user_type": "user"}
+        )
+        return {"access_token": access_token, "token_type": "bearer", "user_type": "user", "event_id": None}
+
+    # Tenta login como comissário pelo username
+    db_commissioner = db.query(Commissioner).filter(Commissioner.username == user.username).first()
+    if db_commissioner:
+        if not verify_password(user.password, db_commissioner.hashed_password):
+            raise HTTPException(status_code=401, detail="Username ou senha invalidos")
+        if not db_commissioner.is_active:
+            raise HTTPException(status_code=401, detail="Conta de comissário inativa")
+        access_token = create_access_token(
+            data={
+                "sub": db_commissioner.username,
+                "role": db_commissioner.role,
+                "user_type": "commissioner",
+                "event_id": db_commissioner.event_id,
+                "commissioner_group_id": db_commissioner.commissioner_group_id,
+                "full_access": db_commissioner.full_access,
+            }
+        )
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user_type": "commissioner",
+            "event_id": db_commissioner.event_id,
         }
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+
+    raise HTTPException(status_code=401, detail="Credenciais invalidas")
 
 def get_user_profile(db: Session, current_user: User) -> UserResponse:
     return current_user

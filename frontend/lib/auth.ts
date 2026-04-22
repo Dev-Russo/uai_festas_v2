@@ -1,3 +1,5 @@
+import { TokenPayload } from "@/types";
+
 const TOKEN_KEY = "token";
 
 export function getToken(): string | null {
@@ -21,4 +23,13 @@ export function clearToken(): void {
   }
   window.localStorage.removeItem(TOKEN_KEY);
   document.cookie = "token=; path=/; max-age=0; samesite=lax";
+}
+
+export function decodeToken(token: string): TokenPayload | null {
+  try {
+    const base64Payload = token.split(".")[1];
+    return JSON.parse(atob(base64Payload)) as TokenPayload;
+  } catch {
+    return null;
+  }
 }

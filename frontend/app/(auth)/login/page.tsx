@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Eye, EyeOff, Mail, Ticket } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { Eye, EyeOff, Mail, Ticket, User } from "lucide-react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { saveToken } from "@/lib/auth";
@@ -12,26 +12,32 @@ import { Spinner } from "@/components/ui/Spinner";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(event: FormEvent) {
+  const isEmail = identifier.includes("@");
+
+  async function handleSubmit(event: { preventDefault: () => void }) {
     event.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const result = await api.login(email, password);
+      const result = await api.login(identifier, password);
       saveToken(result.token);
       if (!remember) {
         document.cookie = "token=; path=/; max-age=0; samesite=lax";
       }
-      router.push("/dashboard");
+      if (result.userType === "commissioner" && result.eventId) {
+        router.push(`/events/${result.eventId}/dashboard`);
+      } else {
+        router.push("/dashboard");
+      }
     } catch {
-      setError("Email ou senha invalidos.");
+      setError("Credenciais invalidas.");
     } finally {
       setLoading(false);
     }
@@ -57,12 +63,12 @@ export default function LoginPage() {
           </div>
 
           <Input
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="voce@evento.com"
-            rightSlot={<Mail size={16} color="#7C3AED" />}
+            label={isEmail ? "Email" : "Email ou Username"}
+            type="text"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            placeholder="email@evento.com ou username"
+            rightSlot={isEmail ? <Mail size={16} color="#7C3AED" /> : <User size={16} color="#7C3AED" />}
             required
           />
 

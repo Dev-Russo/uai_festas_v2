@@ -1,4 +1,6 @@
 import {
+  Commissioner,
+  CreateCommissionerDTO,
   CreateEventDTO,
   CreateProductDTO,
   CreateSaleDTO,
@@ -7,6 +9,7 @@ import {
   Product,
   Sale,
   User,
+  UserType,
 } from "@/types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
@@ -75,17 +78,28 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+function normalizeCommissioner(item: Record<string, unknown>): Commissioner {
+  return {
+    id: String(item.id ?? ""),
+    username: String(item.username ?? ""),
+    name: String(item.name ?? ""),
+    role: (item.role ?? "commissioner") as Commissioner["role"],
+    fullAccess: Boolean(item.full_access ?? item.fullAccess ?? false),
+    eventId: String(item.event_id ?? item.eventId ?? ""),
+    commissionerGroupId: item.commissioner_group_id != null ? String(item.commissioner_group_id) : null,
+    isActive: Boolean(item.is_active ?? item.isActive ?? true),
+  };
+}
+
 export const api = {
-  login: async (email: string, password: string) => {
+  login: async (identifier: string, password: string): Promise<{ token: string; userType: UserType; eventId: number | null }> => {
     const body = new URLSearchParams();
-    body.set("username", email);
+    body.set("username", identifier);
     body.set("password", password);
 
     const res = await fetch(`${BASE_URL}/auth/login`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
     });
 
@@ -93,8 +107,8 @@ export const api = {
       throw new Error("Credenciais invalidas");
     }
 
-    const payload = (await res.json()) as { access_token: string };
-    return { token: payload.access_token };
+    const payload = (await res.json()) as { access_token: string; user_type: UserType; event_id: number | null };
+    return { token: payload.access_token, userType: payload.user_type ?? "user", eventId: payload.event_id ?? null };
   },
 
   register: (name: string, email: string, password: string) =>
@@ -163,5 +177,41 @@ export const api = {
   getEventDashboard: async (eventId: string) => {
     const data = await request<Record<string, unknown>>(`/events/${eventId}/dashboard/`);
     return normalizeDashboard(data);
+  },
+
+  getCommissioners: async (eventId: string) => {
+    const data = await request<Record<string, unknown>[]>(`/events/${eventId}/commissioners/`);
+    return data.map(normalizeCommissioner);
+  },
+  createCommissioner: (eventId: string, data: CreateCommissionerDTO) =>
+    request<Record<string, unknown>>(`/events/${eventId}/commissioners/`, {
+      method: "POST",
+      body: JSON.stringify({
+        username: data.username,
+        name: data.name,
+        password: data.password,
+        role: data.role,
+        full_access: data.fullAccess,
+        is_active: true,
+      }),
+    }).then(normalizeCommissioner),
+  updateCommissioner: async (eventId: string, commissionerId: string, data: Partial<CreateCommissionerDTO> & { isActive?: boolean }) => {
+    const body: Record<string, unknown> = {};
+    if (data.name !== undefined) body.name = data.name;
+    if (data.role !== undefined) body.role = data.role;
+    if (data.fullAccess !== undefined) body.full_access = data.fullAccess;
+    if (data.isActive !== undefined) body.is_active = data.isActive;
+    if (data.password !== undefined) body.password = data.password;
+    const result = await request<Record<string, unknown>>(`/events/${eventId}/commissioners/${commissionerId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+    return normalizeCommissioner(result);
+  },
+  deleteCommissioner: (eventId: string, commissionerId: string) =>
+    request(`/events/${eventId}/commissioners/${commissionerId}`, { method: "DELETE" }),
+  getCommissionerMe: async () => {
+    const data = await request<Record<string, unknown>>("/commissioners/me");
+    return normalizeCommissioner(data);
   },
 };
