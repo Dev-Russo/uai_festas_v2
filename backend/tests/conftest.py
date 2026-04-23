@@ -15,12 +15,12 @@ os.environ.setdefault("SECRET_KEY", "test-secret")
 os.environ.setdefault("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
 os.environ.setdefault("ALGORITHM", "HS256")
 
-from backend.database import Base
-from backend.dependencies.db import get_db
-from backend.main import app
-from backend.models.event import Event
-from backend.models.products import Product
-from backend.models.sales import Sales
+from database import Base
+from dependencies.db import get_db
+from main import app
+from models.event import Event
+from models.products import Product
+from models.sales import Sales
 
 
 @compiles(UUID, "sqlite")

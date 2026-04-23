@@ -24,6 +24,7 @@ class SalesUpdate(BaseModel):
 
 class SalesResponse(SalesBase):
     id: int
+    price: float
     unique_code: uuid.UUID
     checkin_at: Optional[datetime] = None
 

@@ -8,8 +8,11 @@ def create_product(db: Session, product_data: dict, event: Event, user: User):
     # Verifica se o usuário é dono do evento
     if event.owner.id != user.id:
         raise HTTPException(status_code=403, detail="Você não é dono desse evento")
+
+    payload = product_data.model_dump(exclude_none=True)
+
     # Cria o produto associado ao evento
-    new_product = Product(**product_data.model_dump(), event=event)
+    new_product = Product(**payload, event=event)
     # Adiciona e salva no banco
     db.add(new_product)
     db.commit()
@@ -22,7 +25,9 @@ def update_product(db: Session, product: Product, product_data: dict, event: Eve
     if event.owner.id != user.id and user.role != "admin":
         raise HTTPException(status_code=403, detail="Você não é dono desse evento")
     # Atualiza apenas campos enviados
-    for key, value in product_data.model_dump(exclude_unset=True).items():
+    payload = product_data.model_dump(exclude_unset=True, exclude_none=True)
+
+    for key, value in payload.items():
         setattr(product, key, value)
     db.commit()
     db.refresh(product)
