@@ -15,28 +15,18 @@ SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
-"""Security utilities for password hashing and verification using bcrypt algorithm."""
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-"""Functions for hashing and verifying passwords."""
 def verify_password(plain_password, hashed_password) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
-"""Function to hash a password using bcrypt algorithm."""
 def get_password_hash(password) -> str:
-    print("Senha recebida para hash:", password, "Tamanho:", len(password))
     return pwd_context.hash(password[:72])
 
-"""Function to create a JWT access token with an expiration time."""
 def create_access_token(data: dict) -> str:
-    ## Claims to be encoded in the JWT token, including the expiration time.
     to_encode = data.copy()
-    ## Summ the current UTC time with the configured token expiration time to set the "exp" claim.
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    ## Update the claims to be encoded with the expiration time.
     to_encode.update({"exp": expire})
-
-    ## Encode the claims into a JWT token using the secret key and the HS256 algorithm.
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -46,16 +36,71 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, key = settings.SECRET_KEY, algorithms = settings.ALGORITHM)
-        email: str = payload.get('sub')
-        if email is None:
+        payload = jwt.decode(token, key=settings.SECRET_KEY, algorithms=settings.ALGORITHM)
+        email: str = payload.get("sub")
+        user_type: str = payload.get("user_type", "user")
+        if email is None or user_type != "user":
             raise credentials_exception
-        else:
-            token_data = TokenData(email = email)
-    except:
+        token_data = TokenData(email=email, role=payload.get("role"), user_type=user_type)
+    except Exception:
         raise credentials_exception
-    
+
     user = db.query(User).filter(User.email == token_data.email).first()
     if user is None:
         raise credentials_exception
     return user
+
+def get_current_event_manager(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """Retorna User (dono/admin) ou Commissioner com full_access. Usado em rotas de gestão do evento."""
+    from models.commissioner import Commissioner
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, key=settings.SECRET_KEY, algorithms=settings.ALGORITHM)
+        sub: str = payload.get("sub")
+        user_type: str = payload.get("user_type", "user")
+        if sub is None:
+            raise credentials_exception
+    except Exception:
+        raise credentials_exception
+
+    if user_type == "user":
+        user = db.query(User).filter(User.email == sub).first()
+        if user is None:
+            raise credentials_exception
+        return user
+
+    if user_type == "commissioner":
+        commissioner = db.query(Commissioner).filter(Commissioner.username == sub).first()
+        if commissioner is None or not commissioner.is_active:
+            raise credentials_exception
+        if not commissioner.full_access:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso negado")
+        return commissioner
+
+    raise credentials_exception
+
+
+def get_current_commissioner(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    from models.commissioner import Commissioner
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, key=settings.SECRET_KEY, algorithms=settings.ALGORITHM)
+        username: str = payload.get("sub")
+        user_type: str = payload.get("user_type", "user")
+        if username is None or user_type != "commissioner":
+            raise credentials_exception
+    except Exception:
+        raise credentials_exception
+
+    commissioner = db.query(Commissioner).filter(Commissioner.username == username).first()
+    if commissioner is None or not commissioner.is_active:
+        raise credentials_exception
+    return commissioner

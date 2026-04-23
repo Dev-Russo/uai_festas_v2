@@ -32,6 +32,13 @@ class PasswordChange(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    user_type: str = "user"
+    event_id: Optional[int] = None
 
 class TokenData(BaseModel):
     email: EmailStr | None = None
+    role: str | None = None
+    user_type: str = "user"
+    event_id: Optional[int] = None
+    commissioner_group_id: Optional[int] = None
+    full_access: bool = False

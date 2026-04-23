@@ -68,3 +68,6 @@ Thumbs.db
 /frontend/.cache
 /frontend/.vercel
 /frontend/.swc
+
+#Claude
+CLAUDE.md

@@ -144,13 +144,13 @@ O produtor consegue registrar vendas manualmente e visualizar um painel básico 
 - Fixtures para criar usuário e evento padrão nos testes
 
 ### ✅ Critérios Mínimos de Aceitação
-- [ ] É possível registrar uma venda e ela aparece no dashboard imediatamente
-- [ ] Cancelamento de venda atualiza os totais do dashboard corretamente
-- [ ] Dashboard retorna os 7 campos listados sem nenhum zerado incorretamente
-- [ ] Pelo menos 15 testes passando com `pytest`
-- [ ] Cobertura de testes acima de 60% nas rotas principais
-- [ ] Check-in registra o horário e muda o status da venda
-- [ ] Código único de cada venda é realmente único (UUID)
+- [X] É possível registrar uma venda e ela aparece no dashboard imediatamente
+- [X] Cancelamento de venda atualiza os totais do dashboard corretamente
+- [X] Dashboard retorna os 7 campos listados sem nenhum zerado incorretamente
+- [X] Pelo menos 15 testes passando com `pytest`
+- [X] Cobertura de testes acima de 60% nas rotas principais
+- [X] Check-in registra o horário e muda o status da venda
+- [X] Código único de cada venda é realmente único (UUID)
 
 ### 📚 Conceitos que Você Vai Aprender Fazendo
 - Agregações com SQLAlchemy (`func.sum`, `func.count`, `group_by`)

@@ -19,6 +19,7 @@ export default async function EventSectionLayout({
           <Link href={`/events/${id}/dashboard`}>Dashboard</Link>
           <Link href={`/events/${id}/products`}>Lotes</Link>
           <Link href={`/events/${id}/sales`}>Vendas</Link>
+          <Link href={`/events/${id}/commissioners`}>Comissários</Link>
         </nav>
       </aside>
       <div>{children}</div>

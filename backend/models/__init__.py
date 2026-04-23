@@ -1,3 +1,5 @@
 from .user import User
 from .event import Event
 from .products import Product
+from .commissioner import Commissioner
+from .product_group import ProductGroup, ProductGroupMembership

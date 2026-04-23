@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from routers import auth, user, events, products, sales, dashboard
+from routers.commissioner import router as commissioner_router, me_router as commissioner_me_router
+from routers.product_group import router as product_group_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -24,3 +26,6 @@ app.include_router(events.router)
 app.include_router(products.router)
 app.include_router(sales.router)
 app.include_router(dashboard.router)
+app.include_router(commissioner_router)
+app.include_router(commissioner_me_router)
+app.include_router(product_group_router)

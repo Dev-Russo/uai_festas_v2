@@ -1,12 +1,19 @@
 import {
+  Commissioner,
+  CreateCommissionerDTO,
   CreateEventDTO,
   CreateProductDTO,
+  CreateProductGroupDTO,
   CreateSaleDTO,
   DashboardData,
   Event,
   Product,
+  ProductGroup,
+  ProductGroupMembership,
   Sale,
+  UpdateProductGroupDTO,
   User,
+  UserType,
 } from "@/types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
@@ -75,17 +82,58 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+function normalizeCommissioner(item: Record<string, unknown>): Commissioner {
+  return {
+    id: String(item.id ?? ""),
+    username: String(item.username ?? ""),
+    name: String(item.name ?? ""),
+    role: (item.role ?? "commissioner") as Commissioner["role"],
+    fullAccess: Boolean(item.full_access ?? item.fullAccess ?? false),
+    eventId: String(item.event_id ?? item.eventId ?? ""),
+    commissionerGroupId: item.commissioner_group_id != null ? String(item.commissioner_group_id) : null,
+    isActive: Boolean(item.is_active ?? item.isActive ?? true),
+  };
+}
+
+function normalizeProductGroupMembership(item: Record<string, unknown>): ProductGroupMembership {
+  const product = (item.product ?? {}) as Record<string, unknown>;
+  return {
+    productId: String(item.product_id ?? item.productId ?? ""),
+    groupId: String(item.group_id ?? item.groupId ?? ""),
+    isActive: Boolean(item.is_active ?? item.isActive ?? true),
+    product: {
+      id: String(product.id ?? ""),
+      name: String(product.name ?? ""),
+      price: Number(product.price ?? 0),
+      isActive: Boolean(product.is_active ?? product.isActive ?? true),
+    },
+  };
+}
+
+function normalizeProductGroup(item: Record<string, unknown>): ProductGroup {
+  const childrenRaw = Array.isArray(item.children) ? item.children : [];
+  const membershipsRaw = Array.isArray(item.memberships) ? item.memberships : [];
+  return {
+    id: String(item.id ?? ""),
+    name: String(item.name ?? ""),
+    eventId: String(item.event_id ?? item.eventId ?? ""),
+    parentGroupId: item.parent_group_id != null ? String(item.parent_group_id) : null,
+    isDefault: Boolean(item.is_default ?? item.isDefault ?? false),
+    isActive: Boolean(item.is_active ?? item.isActive ?? true),
+    children: childrenRaw.map((child) => normalizeProductGroup(child as Record<string, unknown>)),
+    memberships: membershipsRaw.map((membership) => normalizeProductGroupMembership(membership as Record<string, unknown>)),
+  };
+}
+
 export const api = {
-  login: async (email: string, password: string) => {
+  login: async (identifier: string, password: string): Promise<{ token: string; userType: UserType; eventId: number | null }> => {
     const body = new URLSearchParams();
-    body.set("username", email);
+    body.set("username", identifier);
     body.set("password", password);
 
     const res = await fetch(`${BASE_URL}/auth/login`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
     });
 
@@ -93,8 +141,8 @@ export const api = {
       throw new Error("Credenciais invalidas");
     }
 
-    const payload = (await res.json()) as { access_token: string };
-    return { token: payload.access_token };
+    const payload = (await res.json()) as { access_token: string; user_type: UserType; event_id: number | null };
+    return { token: payload.access_token, userType: payload.user_type ?? "user", eventId: payload.event_id ?? null };
   },
 
   register: (name: string, email: string, password: string) =>
@@ -137,6 +185,51 @@ export const api = {
     request(`/events/${eventId}/products/${productId}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteProduct: (eventId: string, productId: string) => request(`/events/${eventId}/products/${productId}`, { method: "DELETE" }),
 
+  getProductGroups: async (eventId: string) => {
+    const data = await request<Record<string, unknown>[]>(`/events/${eventId}/product-groups/`);
+    return data.map((item) => normalizeProductGroup(item));
+  },
+  createProductGroup: async (eventId: string, data: CreateProductGroupDTO) => {
+    const result = await request<Record<string, unknown>>(`/events/${eventId}/product-groups/`, {
+      method: "POST",
+      body: JSON.stringify({
+        name: data.name,
+        parent_group_id: data.parentGroupId != null && data.parentGroupId !== "" ? Number(data.parentGroupId) : null,
+        is_default: data.isDefault ?? false,
+      }),
+    });
+    return normalizeProductGroup(result);
+  },
+  updateProductGroup: async (eventId: string, groupId: string, data: UpdateProductGroupDTO) => {
+    const body: Record<string, unknown> = {};
+    if (data.name !== undefined) body.name = data.name;
+    if (data.isDefault !== undefined) body.is_default = data.isDefault;
+    if (data.isActive !== undefined) body.is_active = data.isActive;
+    const result = await request<Record<string, unknown>>(`/events/${eventId}/product-groups/${groupId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+    return normalizeProductGroup(result);
+  },
+  deleteProductGroup: (eventId: string, groupId: string) =>
+    request(`/events/${eventId}/product-groups/${groupId}`, { method: "DELETE" }),
+  addProductToGroup: async (eventId: string, groupId: string, productId: string) => {
+    const result = await request<Record<string, unknown>>(
+      `/events/${eventId}/product-groups/${groupId}/products?product_id=${encodeURIComponent(productId)}`,
+      { method: "POST" },
+    );
+    return normalizeProductGroupMembership(result);
+  },
+  toggleProductInGroup: async (eventId: string, groupId: string, productId: string, isActive: boolean) => {
+    const result = await request<Record<string, unknown>>(`/events/${eventId}/product-groups/${groupId}/products/${productId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ is_active: isActive }),
+    });
+    return normalizeProductGroupMembership(result);
+  },
+  removeProductFromGroup: (eventId: string, groupId: string, productId: string) =>
+    request(`/events/${eventId}/product-groups/${groupId}/products/${productId}`, { method: "DELETE" }),
+
   getSales: async (eventId: string) => {
     const data = await request<Record<string, unknown>[]>(`/events/${eventId}/sales/`);
     return data.map((item) => normalizeSale(item));
@@ -163,5 +256,41 @@ export const api = {
   getEventDashboard: async (eventId: string) => {
     const data = await request<Record<string, unknown>>(`/events/${eventId}/dashboard/`);
     return normalizeDashboard(data);
+  },
+
+  getCommissioners: async (eventId: string) => {
+    const data = await request<Record<string, unknown>[]>(`/events/${eventId}/commissioners/`);
+    return data.map(normalizeCommissioner);
+  },
+  createCommissioner: (eventId: string, data: CreateCommissionerDTO) =>
+    request<Record<string, unknown>>(`/events/${eventId}/commissioners/`, {
+      method: "POST",
+      body: JSON.stringify({
+        username: data.username,
+        name: data.name,
+        password: data.password,
+        role: data.role,
+        full_access: data.fullAccess,
+        is_active: true,
+      }),
+    }).then(normalizeCommissioner),
+  updateCommissioner: async (eventId: string, commissionerId: string, data: Partial<CreateCommissionerDTO> & { isActive?: boolean }) => {
+    const body: Record<string, unknown> = {};
+    if (data.name !== undefined) body.name = data.name;
+    if (data.role !== undefined) body.role = data.role;
+    if (data.fullAccess !== undefined) body.full_access = data.fullAccess;
+    if (data.isActive !== undefined) body.is_active = data.isActive;
+    if (data.password !== undefined) body.password = data.password;
+    const result = await request<Record<string, unknown>>(`/events/${eventId}/commissioners/${commissionerId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+    return normalizeCommissioner(result);
+  },
+  deleteCommissioner: (eventId: string, commissionerId: string) =>
+    request(`/events/${eventId}/commissioners/${commissionerId}`, { method: "DELETE" }),
+  getCommissionerMe: async () => {
+    const data = await request<Record<string, unknown>>("/commissioners/me");
+    return normalizeCommissioner(data);
   },
 };
