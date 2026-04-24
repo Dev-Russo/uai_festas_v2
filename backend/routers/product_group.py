@@ -8,7 +8,7 @@ from schemas.product_group import (
     MembershipResponse,
     MembershipToggle,
 )
-from utils.security import get_current_event_manager
+from utils.security import get_current_event_manager, get_current_actor
 
 router = APIRouter(prefix="/events/{event_id}/product-groups", tags=["product-groups"])
 
@@ -20,13 +20,13 @@ def create(event_id: int, data: ProductGroupCreate, db: Session = Depends(get_db
 
 
 @router.get("/", response_model=list[ProductGroupResponse])
-def list_groups(event_id: int, db: Session = Depends(get_db), principal=Depends(get_current_event_manager)):
+def list_groups(event_id: int, db: Session = Depends(get_db), principal=Depends(get_current_actor)):
     from services.product_group import get_groups
     return get_groups(db, event_id, principal)
 
 
 @router.get("/{group_id}", response_model=ProductGroupResponse)
-def get_one(event_id: int, group_id: int, db: Session = Depends(get_db), principal=Depends(get_current_event_manager)):
+def get_one(event_id: int, group_id: int, db: Session = Depends(get_db), principal=Depends(get_current_actor)):
     from services.product_group import get_group_by_id
     return get_group_by_id(db, event_id, group_id, principal)
 

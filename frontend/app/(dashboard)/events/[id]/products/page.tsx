@@ -8,6 +8,7 @@ import { ProductForm } from "@/components/products/ProductForm";
 import { Table } from "@/components/ui/Table";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 type GroupCardProps = {
   eventId: string;
@@ -157,6 +158,8 @@ export default function ProductsPage() {
   const [groups, setGroups] = useState<ProductGroup[]>([]);
   const [openProductModal, setOpenProductModal] = useState(false);
   const [openGroupModal, setOpenGroupModal] = useState(false);
+  const { userType } = useAuth();
+  const isCommissioner = userType === "commissioner";
   const [groupName, setGroupName] = useState("");
   const [groupParentId, setGroupParentId] = useState("");
   const [groupIsDefault, setGroupIsDefault] = useState(false);
@@ -254,18 +257,18 @@ export default function ProductsPage() {
   useEffect(() => {
     let isMounted = true;
 
-    Promise.all([api.getProducts(String(id)), api.getProductGroups(String(id))])
+    const requests = isCommissioner
+      ? [api.getProducts(String(id)), Promise.resolve([])] as const
+      : [api.getProducts(String(id)), api.getProductGroups(String(id))] as const;
+
+    Promise.all(requests)
       .then(([productsData, groupsData]) => {
-        if (!isMounted) {
-          return;
-        }
-        setProducts(productsData);
-        setGroups(groupsData);
+        if (!isMounted) return;
+        setProducts(productsData as Product[]);
+        setGroups(groupsData as ProductGroup[]);
       })
       .catch(() => {
-        if (!isMounted) {
-          return;
-        }
+        if (!isMounted) return;
         setProducts([]);
         setGroups([]);
       });
@@ -273,7 +276,7 @@ export default function ProductsPage() {
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [id, isCommissioner]);
 
   return (
     <main style={{ display: "grid", gap: "1rem" }}>
@@ -282,10 +285,12 @@ export default function ProductsPage() {
           <p className="muted" style={{ margin: 0 }}>Eventos &gt; {id} &gt; Lotes</p>
           <h1 style={{ margin: "0.35rem 0 0" }}>Lotes de Ingresso</h1>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          <Button onClick={() => setOpenGroupModal(true)}>+ Novo Grupo</Button>
-          <Button onClick={() => setOpenProductModal(true)}>+ Novo Lote</Button>
-        </div>
+        {!isCommissioner && (
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <Button onClick={() => setOpenGroupModal(true)}>+ Novo Grupo</Button>
+            <Button onClick={() => setOpenProductModal(true)}>+ Novo Lote</Button>
+          </div>
+        )}
       </section>
 
       {feedback ? (
@@ -319,94 +324,100 @@ export default function ProductsPage() {
         </Table>
       </section>
 
-      <section className="card" style={{ padding: "1rem", display: "grid", gap: "0.9rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.7rem", flexWrap: "wrap" }}>
-          <div>
-            <h2 style={{ margin: 0 }}>Grupos de Acesso</h2>
-            <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.9rem" }}>
-              Defina quais lotes ficam disponiveis para cada grupo de comissarios.
-            </p>
-          </div>
-          <Button onClick={() => setOpenGroupModal(true)}>Criar grupo</Button>
-        </div>
-
-        {groups.length === 0 ? (
-          <p className="muted" style={{ margin: 0 }}>Nenhum grupo criado para este evento.</p>
-        ) : (
-          <div style={{ display: "grid", gap: "0.8rem" }}>
-            {groups.map((group) => (
-              <GroupCard
-                key={group.id}
-                eventId={String(id)}
-                group={group}
-                products={products}
-                selectedProductId={selectedProductByGroup[group.id] ?? ""}
-                onChangeSelectedProduct={setGroupSelectedProduct}
-                onAddProduct={handleAddProductToGroup}
-                onToggleGroup={handleToggleGroup}
-                onToggleMembership={handleToggleMembership}
-                onRemoveMembership={handleRemoveMembership}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      <Modal open={openProductModal} title="Novo lote" onClose={() => setOpenProductModal(false)}>
-        <ProductForm
-          onSubmit={async (payload) => {
-            await api.createProduct(String(id), payload);
-            setOpenProductModal(false);
-            loadProducts();
-          }}
-        />
-      </Modal>
-
-      <Modal open={openGroupModal} title="Novo grupo de acesso" onClose={() => setOpenGroupModal(false)}>
-        <div style={{ display: "grid", gap: "0.7rem" }}>
-          <div style={{ display: "grid", gap: "0.3rem" }}>
-            <label htmlFor="group-name">Nome do grupo</label>
-            <input
-              id="group-name"
-              className="input-field"
-              value={groupName}
-              onChange={(event) => setGroupName(event.target.value)}
-              placeholder="Ex.: Comissarios externos"
-            />
+      {!isCommissioner && (
+        <section className="card" style={{ padding: "1rem", display: "grid", gap: "0.9rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.7rem", flexWrap: "wrap" }}>
+            <div>
+              <h2 style={{ margin: 0 }}>Grupos de Acesso</h2>
+              <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.9rem" }}>
+                Defina quais lotes ficam disponiveis para cada grupo de comissarios.
+              </p>
+            </div>
+            <Button onClick={() => setOpenGroupModal(true)}>Criar grupo</Button>
           </div>
 
-          <div style={{ display: "grid", gap: "0.3rem" }}>
-            <label htmlFor="group-parent">Grupo pai (opcional)</label>
-            <select
-              id="group-parent"
-              className="input-field"
-              value={groupParentId}
-              onChange={(event) => setGroupParentId(event.target.value)}
-            >
-              <option value="">Sem grupo pai</option>
-              {allGroups.map((group) => (
-                <option key={group.id} value={group.id}>
-                  {group.name}
-                </option>
+          {groups.length === 0 ? (
+            <p className="muted" style={{ margin: 0 }}>Nenhum grupo criado para este evento.</p>
+          ) : (
+            <div style={{ display: "grid", gap: "0.8rem" }}>
+              {groups.map((group) => (
+                <GroupCard
+                  key={group.id}
+                  eventId={String(id)}
+                  group={group}
+                  products={products}
+                  selectedProductId={selectedProductByGroup[group.id] ?? ""}
+                  onChangeSelectedProduct={setGroupSelectedProduct}
+                  onAddProduct={handleAddProductToGroup}
+                  onToggleGroup={handleToggleGroup}
+                  onToggleMembership={handleToggleMembership}
+                  onRemoveMembership={handleRemoveMembership}
+                />
               ))}
-            </select>
-          </div>
+            </div>
+          )}
+        </section>
+      )}
 
-          <label className="remember-row" style={{ userSelect: "none" }}>
-            <input
-              type="checkbox"
-              checked={groupIsDefault}
-              onChange={(event) => setGroupIsDefault(event.target.checked)}
-            />
-            Definir como grupo padrao
-          </label>
+      {!isCommissioner && (
+        <Modal open={openProductModal} title="Novo lote" onClose={() => setOpenProductModal(false)}>
+          <ProductForm
+            onSubmit={async (payload) => {
+              await api.createProduct(String(id), payload);
+              setOpenProductModal(false);
+              loadProducts();
+            }}
+          />
+        </Modal>
+      )}
 
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
-            <button className="button-ghost" type="button" onClick={() => setOpenGroupModal(false)}>Cancelar</button>
-            <Button onClick={handleCreateGroup}>Criar grupo</Button>
+      {!isCommissioner && (
+        <Modal open={openGroupModal} title="Novo grupo de acesso" onClose={() => setOpenGroupModal(false)}>
+          <div style={{ display: "grid", gap: "0.7rem" }}>
+            <div style={{ display: "grid", gap: "0.3rem" }}>
+              <label htmlFor="group-name">Nome do grupo</label>
+              <input
+                id="group-name"
+                className="input-field"
+                value={groupName}
+                onChange={(event) => setGroupName(event.target.value)}
+                placeholder="Ex.: Comissarios externos"
+              />
+            </div>
+
+            <div style={{ display: "grid", gap: "0.3rem" }}>
+              <label htmlFor="group-parent">Grupo pai (opcional)</label>
+              <select
+                id="group-parent"
+                className="input-field"
+                value={groupParentId}
+                onChange={(event) => setGroupParentId(event.target.value)}
+              >
+                <option value="">Sem grupo pai</option>
+                {allGroups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <label className="remember-row" style={{ userSelect: "none" }}>
+              <input
+                type="checkbox"
+                checked={groupIsDefault}
+                onChange={(event) => setGroupIsDefault(event.target.checked)}
+              />
+              Definir como grupo padrao
+            </label>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+              <button className="button-ghost" type="button" onClick={() => setOpenGroupModal(false)}>Cancelar</button>
+              <Button onClick={handleCreateGroup}>Criar grupo</Button>
+            </div>
           </div>
-        </div>
-      </Modal>
+        </Modal>
+      )}
     </main>
   );
 }

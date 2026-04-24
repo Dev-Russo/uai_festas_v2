@@ -1,9 +1,8 @@
 from schemas.dashboard import DashboardResponse
 from dependencies import get_db
-from utils.security import get_current_user
+from utils.security import get_current_actor
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from models.user import User
 from models.event import Event
 from models.sales import Sales
 from models.products import Product
@@ -16,10 +15,15 @@ router = APIRouter(prefix="/events/{event_id}/dashboard", tags=["Dashboard"])
 def get_event_dashboard(
     event_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    actor=Depends(get_current_actor),
 ):
-    # Verificar se o evento existe e pertence ao usuário
-    event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
+    from models.commissioner import Commissioner
+    if isinstance(actor, Commissioner):
+        if actor.event_id != event_id:
+            raise HTTPException(status_code=403, detail="Acesso negado")
+        event = db.query(Event).filter(Event.id == event_id).first()
+    else:
+        event = db.query(Event).filter(Event.id == event_id, Event.user_id == actor.id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found or access denied")
     

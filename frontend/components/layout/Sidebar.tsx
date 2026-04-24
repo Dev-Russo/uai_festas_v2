@@ -5,16 +5,33 @@ import { usePathname, useRouter } from "next/navigation";
 import { CalendarDays, LayoutDashboard, LogOut, Ticket, UserRound } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { clearToken } from "@/lib/auth";
+import { UserType } from "@/types";
 
-const items = [
+const adminItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/events", label: "Eventos", icon: CalendarDays },
   { href: "/profile", label: "Perfil", icon: UserRound },
 ];
 
-export function Sidebar({ userName, role }: { userName?: string; role?: string }) {
+export function Sidebar({
+  userName,
+  role,
+  userType,
+  eventId,
+}: {
+  userName?: string;
+  role?: string;
+  userType?: UserType;
+  eventId?: number | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
+
+  const isCommissioner = userType === "commissioner";
+  const items =
+    isCommissioner && eventId
+      ? [{ href: `/events/${eventId}/dashboard`, label: "Meu Evento", icon: LayoutDashboard }]
+      : adminItems;
 
   return (
     <aside className="sidebar-shell">

@@ -9,6 +9,7 @@ import { Table } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 export default function SalesPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +18,8 @@ export default function SalesPage() {
   const [open, setOpen] = useState(false);
   const [salesError, setSalesError] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<{ type: "error" | "success"; message: string } | null>(null);
+  const { userType, tokenPayload } = useAuth();
+  const canManageSales = userType !== "commissioner" || (tokenPayload?.full_access ?? false);
 
   function parseErrorMessage(error: unknown, fallback = "Erro na operacao.") {
     if (!(error instanceof Error)) return fallback;
@@ -109,39 +112,43 @@ export default function SalesPage() {
                 <td>{formatDateTime(sale.createdAt ?? (sale as { sale_date?: string }).sale_date ?? null)}</td>
                 <td>{formatDateTime(sale.checkinAt ?? (sale as { checkin_at?: string }).checkin_at ?? null)}</td>
                 <td style={{ display: "flex", gap: 6 }}>
-                  <Button
-                    type="button"
-                    style={{ padding: "0.35rem 0.6rem", fontSize: "0.82rem" }}
-                    onClick={async () => {
-                      if (!window.confirm("Confirmar check-in desta venda?")) return;
-                      try {
-                        await api.checkinSale(String(id), String(sale.id));
-                        setActionFeedback({ type: "success", message: "Check-in realizado com sucesso." });
-                        await loadSales();
-                      } catch (error) {
-                        setActionFeedback({ type: "error", message: parseErrorMessage(error, "Nao foi possivel realizar o check-in.") });
-                      }
-                    }}
-                  >
-                    check-in
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="danger"
-                    style={{ padding: "0.35rem 0.6rem", fontSize: "0.82rem", background: "#fff5f5" }}
-                    onClick={async () => {
-                      if (!window.confirm("Confirmar cancelamento desta venda?")) return;
-                      try {
-                        await api.cancelSale(String(id), String(sale.id));
-                        setActionFeedback({ type: "success", message: "Venda cancelada com sucesso." });
-                        await loadSales();
-                      } catch (error) {
-                        setActionFeedback({ type: "error", message: parseErrorMessage(error, "Nao foi possivel cancelar a venda.") });
-                      }
-                    }}
-                  >
-                    cancelar
-                  </Button>
+                  {canManageSales && (
+                    <>
+                      <Button
+                        type="button"
+                        style={{ padding: "0.35rem 0.6rem", fontSize: "0.82rem" }}
+                        onClick={async () => {
+                          if (!window.confirm("Confirmar check-in desta venda?")) return;
+                          try {
+                            await api.checkinSale(String(id), String(sale.id));
+                            setActionFeedback({ type: "success", message: "Check-in realizado com sucesso." });
+                            await loadSales();
+                          } catch (error) {
+                            setActionFeedback({ type: "error", message: parseErrorMessage(error, "Nao foi possivel realizar o check-in.") });
+                          }
+                        }}
+                      >
+                        check-in
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="danger"
+                        style={{ padding: "0.35rem 0.6rem", fontSize: "0.82rem", background: "#fff5f5" }}
+                        onClick={async () => {
+                          if (!window.confirm("Confirmar cancelamento desta venda?")) return;
+                          try {
+                            await api.cancelSale(String(id), String(sale.id));
+                            setActionFeedback({ type: "success", message: "Venda cancelada com sucesso." });
+                            await loadSales();
+                          } catch (error) {
+                            setActionFeedback({ type: "error", message: parseErrorMessage(error, "Nao foi possivel cancelar a venda.") });
+                          }
+                        }}
+                      >
+                        cancelar
+                      </Button>
+                    </>
+                  )}
                 </td>
               </tr>
             ))}

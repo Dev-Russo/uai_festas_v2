@@ -34,17 +34,19 @@ def update_product(db: Session, product: Product, product_data: dict, event: Eve
     # Retorna o produto atualizado
     return product
 
-def get_products(db: Session, user: User, event: Event):
+def get_products(db: Session, actor, event: Event):
+    from models.commissioner import Commissioner
+    if isinstance(actor, Commissioner):
+        return db.query(Product).filter(Product.event_id == event.id).all()
+    user = actor
     if user.role == "admin":
         db_products = db.query(Product).all()
-    elif event.owner.id == user.id: 
+    elif event.owner.id == user.id:
         db_products = db.query(Product).filter(Product.event_id == event.id).all()
     else:
         raise HTTPException(status_code=403, detail="Você não é dono desse evento")
-
     if not db_products:
         raise HTTPException(status_code=404, detail="Não foi encontrado os produtos")
-    
     return db_products
 
 def get_product_by_id(db: Session, user: User, event: Event, product_id: int):

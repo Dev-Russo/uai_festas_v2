@@ -84,6 +84,38 @@ def get_current_event_manager(token: str = Depends(oauth2_scheme), db: Session =
     raise credentials_exception
 
 
+def get_current_actor(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """Retorna User ou Commissioner — qualquer actor autenticado e ativo."""
+    from models.commissioner import Commissioner
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, key=settings.SECRET_KEY, algorithms=settings.ALGORITHM)
+        sub: str = payload.get("sub")
+        user_type: str = payload.get("user_type", "user")
+        if sub is None:
+            raise credentials_exception
+    except Exception:
+        raise credentials_exception
+
+    if user_type == "user":
+        user = db.query(User).filter(User.email == sub).first()
+        if user is None:
+            raise credentials_exception
+        return user
+
+    if user_type == "commissioner":
+        commissioner = db.query(Commissioner).filter(Commissioner.username == sub).first()
+        if commissioner is None or not commissioner.is_active:
+            raise credentials_exception
+        return commissioner
+
+    raise credentials_exception
+
+
 def get_current_commissioner(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     from models.commissioner import Commissioner
     credentials_exception = HTTPException(

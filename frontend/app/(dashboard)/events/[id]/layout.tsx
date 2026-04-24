@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { EventMiniNav } from "@/components/layout/EventMiniNav";
 
 export default async function EventSectionLayout({
   children,
@@ -15,12 +15,7 @@ export default async function EventSectionLayout({
       <aside className="event-mini-nav card">
         <h3>Evento #{id}</h3>
         <p className="muted">Navegacao rapida</p>
-        <nav>
-          <Link href={`/events/${id}/dashboard`}>Dashboard</Link>
-          <Link href={`/events/${id}/products`}>Lotes</Link>
-          <Link href={`/events/${id}/sales`}>Vendas</Link>
-          <Link href={`/events/${id}/commissioners`}>Comissários</Link>
-        </nav>
+        <EventMiniNav eventId={id} />
       </aside>
       <div>{children}</div>
     </section>
