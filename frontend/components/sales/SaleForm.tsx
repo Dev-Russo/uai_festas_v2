@@ -36,9 +36,19 @@ export function SaleForm({
           }}
         >
           <option value="">Selecione</option>
-          {products.map((product) => (
-            <option key={product.id} value={String(product.id)}>{product.name}</option>
-          ))}
+          {products.map((product) => {
+            const soldOut = product.quantity != null && product.quantity <= 0;
+            const stockLabel = product.quantity == null
+              ? "ilimitado"
+              : soldOut
+              ? "esgotado"
+              : `${product.quantity} restantes`;
+            return (
+              <option key={product.id} value={String(product.id)} disabled={soldOut}>
+                {product.name} · {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(product.price)} · {stockLabel}
+              </option>
+            );
+          })}
         </select>
       </label>
       {products.length === 0 ? <small className="muted">Nenhum lote disponivel para este evento.</small> : null}

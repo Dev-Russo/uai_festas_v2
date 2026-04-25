@@ -16,6 +16,7 @@ export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [salesError, setSalesError] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<{ type: "error" | "success"; message: string } | null>(null);
   const { userType, tokenPayload } = useAuth();
@@ -66,6 +67,12 @@ export default function SalesPage() {
     loadSales();
   }, [id]);
 
+  const filteredSales = useMemo(() => {
+    if (!searchQuery.trim()) return sales;
+    const q = searchQuery.toLowerCase();
+    return sales.filter((s) => (s.buyerName ?? "").toLowerCase().includes(q));
+  }, [sales, searchQuery]);
+
   const summary = useMemo(() => {
     const paid = sales.filter((s) => s.status === "paid");
     const cancelled = sales.filter((s) => s.status === "cancelled");
@@ -94,6 +101,15 @@ export default function SalesPage() {
       {actionFeedback ? <p className={actionFeedback.type === "error" ? "inline-error" : "inline-success"}>{actionFeedback.message}</p> : null}
 
       <section className="card" style={{ padding: "1rem" }}>
+        <div style={{ marginBottom: "0.75rem" }}>
+          <input
+            className="input-field"
+            placeholder="Buscar por nome do comprador..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ maxWidth: 360 }}
+          />
+        </div>
         <Table>
           <thead>
             <tr>
@@ -101,7 +117,7 @@ export default function SalesPage() {
             </tr>
           </thead>
           <tbody>
-            {sales.map((sale) => (
+            {filteredSales.map((sale) => (
               <tr key={sale.id}>
                 <td>{sale.code ?? sale.id}</td>
                 <td>{sale.buyerName ?? (sale as { buyer_name?: string }).buyer_name}</td>

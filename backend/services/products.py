@@ -34,10 +34,39 @@ def update_product(db: Session, product: Product, product_data: dict, event: Eve
     # Retorna o produto atualizado
     return product
 
+def _collect_group_ids(db: Session, root_group_id: int) -> list:
+    from models.product_group import ProductGroup
+    all_groups = db.query(ProductGroup).all()
+    children_map: dict = {}
+    for g in all_groups:
+        if g.parent_group_id is not None:
+            children_map.setdefault(g.parent_group_id, []).append(g.id)
+    ids = []
+    stack = [root_group_id]
+    while stack:
+        current = stack.pop()
+        ids.append(current)
+        stack.extend(children_map.get(current, []))
+    return ids
+
+
 def get_products(db: Session, actor, event: Event):
     from models.commissioner import Commissioner
     if isinstance(actor, Commissioner):
-        return db.query(Product).filter(Product.event_id == event.id).all()
+        if actor.commissioner_group_id is None:
+            return []
+        from models.product_group import ProductGroupMembership
+        group_ids = _collect_group_ids(db, actor.commissioner_group_id)
+        product_ids = [
+            pid for (pid,) in db.query(ProductGroupMembership.product_id).filter(
+                ProductGroupMembership.group_id.in_(group_ids),
+                ProductGroupMembership.is_active == True,
+            ).all()
+        ]
+        return db.query(Product).filter(
+            Product.event_id == event.id,
+            Product.id.in_(product_ids),
+        ).all()
     user = actor
     if user.role == "admin":
         db_products = db.query(Product).all()

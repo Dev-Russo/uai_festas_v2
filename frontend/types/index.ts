@@ -52,8 +52,10 @@ export interface Sale {
 export interface DashboardData {
   totalPaidSales: number;
   totalCancelledSales: number;
+  totalCheckins: number;
   totalRevenue: number;
   averageTicket: number;
+  checkinRate: number;
   salesByProduct: { productName: string; count: number; revenue?: number }[];
   salesByDay: { date: string; count: number; revenue?: number }[];
   cancellationRate: number;

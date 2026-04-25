@@ -24,8 +24,10 @@ function normalizeDashboard(data: Record<string, unknown>): DashboardData {
   return {
     totalPaidSales: Number(data.total_paid_sales ?? 0),
     totalCancelledSales: Number(data.total_canceled_sales ?? 0),
+    totalCheckins: Number(data.total_checkins ?? 0),
     totalRevenue: Number(data.total_revenue ?? 0),
     averageTicket: Number(data.average_ticket ?? 0),
+    checkinRate: Number(data.checkin_rate ?? 0),
     salesByProduct: salesByProduct.map((item) => {
       const typed = item as Record<string, unknown>;
       return {
@@ -197,8 +199,17 @@ export const api = {
         end_selling_date: data.endDate,
       }),
     }),
-  updateProduct: (eventId: string, productId: string, data: Partial<Product>) =>
-    request(`/events/${eventId}/products/${productId}`, { method: "PUT", body: JSON.stringify(data) }),
+  updateProduct: (eventId: string, productId: string, data: CreateProductDTO) =>
+    request(`/events/${eventId}/products/${productId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        name: data.name,
+        price: data.price,
+        available_quantity: data.quantity,
+        start_selling_date: data.startDate || null,
+        end_selling_date: data.endDate || null,
+      }),
+    }),
   deleteProduct: (eventId: string, productId: string) => request(`/events/${eventId}/products/${productId}`, { method: "DELETE" }),
 
   getProductGroups: async (eventId: string) => {
@@ -290,13 +301,14 @@ export const api = {
         is_active: true,
       }),
     }).then(normalizeCommissioner),
-  updateCommissioner: async (eventId: string, commissionerId: string, data: Partial<CreateCommissionerDTO> & { isActive?: boolean }) => {
+  updateCommissioner: async (eventId: string, commissionerId: string, data: Partial<CreateCommissionerDTO> & { isActive?: boolean; commissionerGroupId?: number | null }) => {
     const body: Record<string, unknown> = {};
     if (data.name !== undefined) body.name = data.name;
     if (data.role !== undefined) body.role = data.role;
     if (data.fullAccess !== undefined) body.full_access = data.fullAccess;
     if (data.isActive !== undefined) body.is_active = data.isActive;
     if (data.password !== undefined) body.password = data.password;
+    if (data.commissionerGroupId !== undefined) body.commissioner_group_id = data.commissionerGroupId;
     const result = await request<Record<string, unknown>>(`/events/${eventId}/commissioners/${commissionerId}`, {
       method: "PATCH",
       body: JSON.stringify(body),

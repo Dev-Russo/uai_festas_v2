@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
-import { Product, ProductGroup } from "@/types";
+import { Commissioner, Product, ProductGroup } from "@/types";
 import { ProductForm } from "@/components/products/ProductForm";
 import { Table } from "@/components/ui/Table";
 import { Modal } from "@/components/ui/Modal";
@@ -20,6 +20,8 @@ type GroupCardProps = {
   onToggleGroup: (groupId: string, nextState: boolean) => Promise<void>;
   onToggleMembership: (groupId: string, productId: string, nextState: boolean) => Promise<void>;
   onRemoveMembership: (groupId: string, productId: string) => Promise<void>;
+  onConfigureCommissioners: (groupId: string) => void;
+  onDeleteGroup: (groupId: string) => Promise<void>;
   level?: number;
 };
 
@@ -33,6 +35,8 @@ function GroupCard({
   onToggleGroup,
   onToggleMembership,
   onRemoveMembership,
+  onConfigureCommissioners,
+  onDeleteGroup,
   level = 0,
 }: GroupCardProps) {
   const usedProductIds = new Set(group.memberships.map((membership) => membership.productId));
@@ -56,14 +60,32 @@ function GroupCard({
             Grupo #{group.id} {group.isDefault ? "· Padrao" : ""} {group.isActive ? "· Ativo" : "· Inativo"}
           </p>
         </div>
-        <button
-          className="button-ghost"
-          type="button"
-          onClick={() => onToggleGroup(group.id, !group.isActive)}
-          style={{ whiteSpace: "nowrap" }}
-        >
-          {group.isActive ? "Desativar grupo" : "Ativar grupo"}
-        </button>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          <button
+            className="button-ghost"
+            type="button"
+            onClick={() => onConfigureCommissioners(group.id)}
+            style={{ whiteSpace: "nowrap" }}
+          >
+            Comissarios
+          </button>
+          <button
+            className="button-ghost"
+            type="button"
+            onClick={() => onToggleGroup(group.id, !group.isActive)}
+            style={{ whiteSpace: "nowrap" }}
+          >
+            {group.isActive ? "Desativar grupo" : "Ativar grupo"}
+          </button>
+          <button
+            className="button-ghost"
+            type="button"
+            onClick={() => onDeleteGroup(group.id)}
+            style={{ whiteSpace: "nowrap", color: "#dc2626" }}
+          >
+            Excluir
+          </button>
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
@@ -143,6 +165,8 @@ function GroupCard({
               onToggleGroup={onToggleGroup}
               onToggleMembership={onToggleMembership}
               onRemoveMembership={onRemoveMembership}
+              onConfigureCommissioners={onConfigureCommissioners}
+              onDeleteGroup={onDeleteGroup}
               level={level + 1}
             />
           ))}
@@ -158,6 +182,7 @@ export default function ProductsPage() {
   const [groups, setGroups] = useState<ProductGroup[]>([]);
   const [openProductModal, setOpenProductModal] = useState(false);
   const [openGroupModal, setOpenGroupModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const { userType } = useAuth();
   const isCommissioner = userType === "commissioner";
   const [groupName, setGroupName] = useState("");
@@ -165,6 +190,9 @@ export default function ProductsPage() {
   const [groupIsDefault, setGroupIsDefault] = useState(false);
   const [selectedProductByGroup, setSelectedProductByGroup] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<string>("");
+  const [commissionersGroupId, setCommissionersGroupId] = useState<string | null>(null);
+  const [allEventCommissioners, setAllEventCommissioners] = useState<Commissioner[]>([]);
+  const [selectedCommissionerToAdd, setSelectedCommissionerToAdd] = useState("");
 
   function flattenGroups(list: ProductGroup[]): ProductGroup[] {
     return list.flatMap((group) => [group, ...flattenGroups(group.children)]);
@@ -184,6 +212,54 @@ export default function ProductsPage() {
 
   function setGroupSelectedProduct(groupId: string, productId: string) {
     setSelectedProductByGroup((prev) => ({ ...prev, [groupId]: productId }));
+  }
+
+  async function handleDeleteGroup(groupId: string) {
+    if (!window.confirm("Excluir este grupo? Esta acao nao pode ser desfeita.")) return;
+    try {
+      await api.deleteProductGroup(String(id), groupId);
+      await loadGroups();
+      setFeedback("Grupo excluido com sucesso.");
+    } catch {
+      setFeedback("Nao foi possivel excluir o grupo. Remova os subgrupos antes de excluir.");
+    }
+  }
+
+  async function handleConfigureCommissioners(groupId: string) {
+    try {
+      const data = await api.getCommissioners(String(id));
+      setAllEventCommissioners(data);
+    } catch {
+      setAllEventCommissioners([]);
+    }
+    setSelectedCommissionerToAdd("");
+    setCommissionersGroupId(groupId);
+  }
+
+  async function handleAddCommissionerToGroup() {
+    if (!selectedCommissionerToAdd || !commissionersGroupId) return;
+    try {
+      await api.updateCommissioner(String(id), selectedCommissionerToAdd, {
+        commissionerGroupId: Number(commissionersGroupId),
+      });
+      const data = await api.getCommissioners(String(id));
+      setAllEventCommissioners(data);
+      setSelectedCommissionerToAdd("");
+    } catch {
+      setFeedback("Nao foi possivel adicionar o comissario ao grupo.");
+    }
+  }
+
+  async function handleRemoveCommissionerFromGroup(commissionerId: string) {
+    try {
+      await api.updateCommissioner(String(id), commissionerId, {
+        commissionerGroupId: null,
+      });
+      const data = await api.getCommissioners(String(id));
+      setAllEventCommissioners(data);
+    } catch {
+      setFeedback("Nao foi possivel remover o comissario do grupo.");
+    }
   }
 
   async function handleCreateGroup() {
@@ -320,7 +396,9 @@ export default function ProductsPage() {
                     : "-"}
                 </td>
                 <td>
-                  <button className="button-ghost" type="button">Editar</button>
+                  {!isCommissioner && (
+                    <button className="button-ghost" type="button" onClick={() => setEditingProduct(product)}>Editar</button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -356,6 +434,8 @@ export default function ProductsPage() {
                   onToggleGroup={handleToggleGroup}
                   onToggleMembership={handleToggleMembership}
                   onRemoveMembership={handleRemoveMembership}
+                  onConfigureCommissioners={handleConfigureCommissioners}
+                  onDeleteGroup={handleDeleteGroup}
                 />
               ))}
             </div>
@@ -369,6 +449,25 @@ export default function ProductsPage() {
             onSubmit={async (payload) => {
               await api.createProduct(String(id), payload);
               setOpenProductModal(false);
+              loadProducts();
+            }}
+          />
+        </Modal>
+      )}
+
+      {editingProduct && (
+        <Modal open={!!editingProduct} title="Editar lote" onClose={() => setEditingProduct(null)}>
+          <ProductForm
+            initialValues={{
+              name: editingProduct.name,
+              price: editingProduct.price,
+              quantity: editingProduct.quantity,
+              startDate: editingProduct.startDate,
+              endDate: editingProduct.endDate,
+            }}
+            onSubmit={async (payload) => {
+              await api.updateProduct(String(id), String(editingProduct.id), payload);
+              setEditingProduct(null);
               loadProducts();
             }}
           />
@@ -422,6 +521,70 @@ export default function ProductsPage() {
           </div>
         </Modal>
       )}
+      {commissionersGroupId !== null && (() => {
+        const groupName = allGroups.find((g) => g.id === commissionersGroupId)?.name ?? `Grupo #${commissionersGroupId}`;
+        const inGroup = allEventCommissioners.filter((c) => c.commissionerGroupId === commissionersGroupId);
+        const notInGroup = allEventCommissioners.filter((c) => c.commissionerGroupId !== commissionersGroupId);
+        return (
+          <Modal
+            open={commissionersGroupId !== null}
+            title={`Comissarios — ${groupName}`}
+            onClose={() => setCommissionersGroupId(null)}
+          >
+            <div style={{ display: "grid", gap: "1rem" }}>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <select
+                  className="input-field"
+                  value={selectedCommissionerToAdd}
+                  onChange={(e) => setSelectedCommissionerToAdd(e.target.value)}
+                  style={{ flex: 1 }}
+                >
+                  <option value="">Selecionar comissario...</option>
+                  {notInGroup.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.username})
+                    </option>
+                  ))}
+                </select>
+                <Button onClick={handleAddCommissionerToGroup} disabled={!selectedCommissionerToAdd}>
+                  Adicionar
+                </Button>
+              </div>
+
+              {inGroup.length === 0 ? (
+                <p className="muted" style={{ margin: 0 }}>Nenhum comissario neste grupo.</p>
+              ) : (
+                <Table>
+                  <thead>
+                    <tr>
+                      <th>Nome</th>
+                      <th>Usuario</th>
+                      <th>Acoes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inGroup.map((c) => (
+                      <tr key={c.id}>
+                        <td>{c.name}</td>
+                        <td>{c.username}</td>
+                        <td>
+                          <button
+                            className="button-ghost"
+                            type="button"
+                            onClick={() => handleRemoveCommissionerFromGroup(c.id)}
+                          >
+                            Remover
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              )}
+            </div>
+          </Modal>
+        );
+      })()}
     </main>
   );
 }

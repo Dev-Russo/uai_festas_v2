@@ -26,50 +26,57 @@ def get_event_dashboard(
         event = db.query(Event).filter(Event.id == event_id, Event.user_id == actor.id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found or access denied")
-    
-    # Calcular as métricas do dashboard
 
-    # Total de vendas pagas
+    restrict_to_commissioner = isinstance(actor, Commissioner) and not actor.full_access
+
     total_paid_sales = db.query(Event).join(Product).join(Sales).filter(
-        Event.id == event_id, 
-        Sales.status == "paid"
+        Event.id == event_id,
+        Sales.status == "paid",
+        *([Sales.commissioner_id == actor.id] if restrict_to_commissioner else []),
     ).count()
-    
-    # Total de vendas canceladas
+
     total_canceled_sales = db.query(Event).join(Product).join(Sales).filter(
-        Event.id == event_id, 
-        Sales.status == SaleStatus.cancelled
+        Event.id == event_id,
+        Sales.status == SaleStatus.cancelled,
+        *([Sales.commissioner_id == actor.id] if restrict_to_commissioner else []),
     ).count()
-    
-    # Total de receita
+
     total_revenue = db.query(Event).join(Product).join(Sales).filter(
-        Event.id == event_id, 
-        Sales.status == SaleStatus.paid
+        Event.id == event_id,
+        Sales.status == SaleStatus.paid,
+        *([Sales.commissioner_id == actor.id] if restrict_to_commissioner else []),
     ).with_entities(func.sum(Product.price)).scalar() or 0.0
-    
-    # Ticket médio
+
     average_ticket = total_revenue / total_paid_sales if total_paid_sales > 0 else 0
 
-    # Vendas por produto
+    total_checkins = db.query(Event).join(Product).join(Sales).filter(
+        Event.id == event_id,
+        Sales.checkin_at.isnot(None),
+        *([Sales.commissioner_id == actor.id] if restrict_to_commissioner else []),
+    ).count()
+
+    checkin_rate = total_checkins / total_paid_sales if total_paid_sales > 0 else 0.0
+
     sales_by_product_raw = db.query(
-        Product.name, 
+        Product.name,
         func.count(Sales.id)
     ).join(Sales).filter(
-        Product.event_id == event_id, 
-        Sales.status == "paid"
+        Product.event_id == event_id,
+        Sales.status == "paid",
+        *([Sales.commissioner_id == actor.id] if restrict_to_commissioner else []),
     ).group_by(Product.name).all()
-    
-    # Vendas por dia (últimos 30 dias)
+
     sales_by_day_raw = db.query(
-        func.date(Sales.sale_date), 
+        func.date(Sales.sale_date),
         func.count(Sales.id)
     ).join(Product).join(Event).filter(
-        Event.id == event_id, 
-        Sales.status == SaleStatus.paid
+        Event.id == event_id,
+        Sales.status == SaleStatus.paid,
+        *([Sales.commissioner_id == actor.id] if restrict_to_commissioner else []),
     ).group_by(
         func.date(Sales.sale_date)
     ).order_by(
-        func.date(Sales.sale_date).desc()
+        func.date(Sales.sale_date).asc()
     ).limit(30).all()
 
     # Taxa de cancelamento
@@ -82,9 +89,11 @@ def get_event_dashboard(
     return DashboardResponse(
         total_paid_sales=total_paid_sales,
         total_canceled_sales=total_canceled_sales,
+        total_checkins=total_checkins,
         total_revenue=total_revenue,
         average_ticket=average_ticket,
-        sales_by_product=sales_by_product,     
+        checkin_rate=checkin_rate,
+        sales_by_product=sales_by_product,
         sales_by_day=sales_by_day,
-        cancellation_rate=cancellation_rate
+        cancellation_rate=cancellation_rate,
     )

@@ -18,6 +18,7 @@ class CommissionerUpdate(BaseModel):
     full_access: Optional[bool] = None
     is_active: Optional[bool] = None
     password: Optional[str] = Field(default=None, min_length=8)
+    commissioner_group_id: Optional[int] = None
 
 class CommissionerResponse(CommissionerBase):
     id: int

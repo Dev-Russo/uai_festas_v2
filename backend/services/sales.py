@@ -15,18 +15,19 @@ def create_sale(db: Session, actor, sale: SalesCreate, event_id: int) -> SalesRe
         if actor.role != UserRole.admin and actor.role != UserRole.producer:
             raise HTTPException(status_code=403, detail="Acesso negado")
 
-    # Buscar produto
-    product = db.query(Product).filter(Product.id == sale.product_id).first()
+    product = db.query(Product).filter(Product.id == sale.product_id).with_for_update().first()
     if not product:
         raise HTTPException(status_code=404, detail="Produto não encontrado")
 
-    # Buscar evento
     event = db.query(Event).filter(Event.id == product.event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
 
     if product.event_id != event_id:
         raise HTTPException(status_code=400, detail="Produto nao pertence ao evento informado")
+
+    if product.available_quantity is not None and product.available_quantity <= 0:
+        raise HTTPException(status_code=400, detail="Produto esgotado")
 
     from models.commissioner import Commissioner
     commissioner_id = actor.id if isinstance(actor, Commissioner) else None
@@ -42,6 +43,9 @@ def create_sale(db: Session, actor, sale: SalesCreate, event_id: int) -> SalesRe
         commissioner_id=commissioner_id,
     )
     
+    if product.available_quantity is not None:
+        product.available_quantity -= 1
+
     db.add(db_sale)
     db.commit()
     db.refresh(db_sale)

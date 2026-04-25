@@ -5,13 +5,26 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { CreateProductDTO } from "@/types";
 
-export function ProductForm({ onSubmit }: { onSubmit: (payload: CreateProductDTO) => Promise<void> }) {
+function toDatetimeLocal(iso?: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 16);
+}
+
+export function ProductForm({
+  onSubmit,
+  initialValues,
+}: {
+  onSubmit: (payload: CreateProductDTO) => Promise<void>;
+  initialValues?: Partial<CreateProductDTO>;
+}) {
   const [payload, setPayload] = useState<CreateProductDTO>({
-    name: "",
-    price: 0,
-    quantity: 0,
-    startDate: "",
-    endDate: "",
+    name: initialValues?.name ?? "",
+    price: initialValues?.price ?? 0,
+    quantity: initialValues?.quantity ?? 0,
+    startDate: initialValues?.startDate ? toDatetimeLocal(initialValues.startDate) : "",
+    endDate: initialValues?.endDate ? toDatetimeLocal(initialValues.endDate) : "",
   });
 
   async function handleSubmit(event: FormEvent) {
