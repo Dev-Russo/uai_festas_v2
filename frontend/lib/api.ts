@@ -95,6 +95,18 @@ function normalizeCommissioner(item: Record<string, unknown>): Commissioner {
   };
 }
 
+function normalizeProduct(item: Record<string, unknown>): Product {
+  return {
+    id: String(item.id ?? ""),
+    eventId: item.event_id != null ? String(item.event_id) : undefined,
+    name: String(item.name ?? ""),
+    price: Number(item.price ?? 0),
+    quantity: item.available_quantity != null ? Number(item.available_quantity) : undefined,
+    startDate: item.start_selling_date ? String(item.start_selling_date) : undefined,
+    endDate: item.end_selling_date ? String(item.end_selling_date) : undefined,
+  };
+}
+
 function normalizeProductGroupMembership(item: Record<string, unknown>): ProductGroupMembership {
   const product = (item.product ?? {}) as Record<string, unknown>;
   return {
@@ -170,13 +182,17 @@ export const api = {
   updateEvent: (id: string, data: Partial<Event>) => request(`/events/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteEvent: (id: string) => request(`/events/${id}`, { method: "DELETE" }),
 
-  getProducts: (eventId: string) => request<Product[]>(`/events/${eventId}/products/`),
+  getProducts: async (eventId: string) => {
+    const data = await request<Record<string, unknown>[]>(`/events/${eventId}/products/`);
+    return data.map(normalizeProduct);
+  },
   createProduct: (eventId: string, data: CreateProductDTO) =>
     request(`/events/${eventId}/products/`, {
       method: "POST",
       body: JSON.stringify({
         name: data.name,
         price: data.price,
+        available_quantity: data.quantity,
         start_selling_date: data.startDate,
         end_selling_date: data.endDate,
       }),

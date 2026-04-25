@@ -314,7 +314,11 @@ export default function ProductsPage() {
                 <td>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(product.price)}</td>
                 <td>{product.quantity ?? "-"}</td>
                 <td>{product.quantity ?? "-"}</td>
-                <td>-</td>
+                <td>
+                  {product.startDate || product.endDate
+                    ? `${product.startDate ? new Date(product.startDate).toLocaleDateString("pt-BR") : "?"} → ${product.endDate ? new Date(product.endDate).toLocaleDateString("pt-BR") : "?"}`
+                    : "-"}
+                </td>
                 <td>
                   <button className="button-ghost" type="button">Editar</button>
                 </td>
