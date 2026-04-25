@@ -17,6 +17,6 @@ class Sales(Base):
     sale_date = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     checkin_at = Column(DateTime(timezone=True), nullable=True)
     unique_code = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
+    commissioner_id = Column(Integer, ForeignKey("commissioners.id"), nullable=True)
 
-    #relationship with product
     product = relationship("Product", back_populates="sales")

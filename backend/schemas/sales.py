@@ -27,6 +27,6 @@ class SalesResponse(SalesBase):
     price: float
     unique_code: uuid.UUID
     checkin_at: Optional[datetime] = None
+    commissioner_id: Optional[int] = None
 
-    
     model_config = ConfigDict(from_attributes=True)

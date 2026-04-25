@@ -28,7 +28,9 @@ def create_sale(db: Session, actor, sale: SalesCreate, event_id: int) -> SalesRe
     if product.event_id != event_id:
         raise HTTPException(status_code=400, detail="Produto nao pertence ao evento informado")
 
-    # Preço vem do produto
+    from models.commissioner import Commissioner
+    commissioner_id = actor.id if isinstance(actor, Commissioner) else None
+
     db_sale = Sales(
         buyer_name=sale.buyer_name,
         buyer_email=sale.buyer_email,
@@ -36,7 +38,8 @@ def create_sale(db: Session, actor, sale: SalesCreate, event_id: int) -> SalesRe
         method_of_payment=sale.method_of_payment,
         sale_date=sale.sale_date,
         status=sale.status,
-        price=product.price
+        price=product.price,
+        commissioner_id=commissioner_id,
     )
     
     db.add(db_sale)
@@ -46,7 +49,11 @@ def create_sale(db: Session, actor, sale: SalesCreate, event_id: int) -> SalesRe
     return db_sale
 
 def get_sales(db: Session, actor, event_id: int) -> list:
-    return db.query(Sales).join(Sales.product).filter(Product.event_id == event_id).all()
+    from models.commissioner import Commissioner
+    query = db.query(Sales).join(Sales.product).filter(Product.event_id == event_id)
+    if isinstance(actor, Commissioner) and not actor.full_access:
+        query = query.filter(Sales.commissioner_id == actor.id)
+    return query.all()
 
 def get_sale_by_id(db: Session, actor, sale_id: int, event_id: int) -> SalesResponse:
     sale = (
