@@ -238,6 +238,13 @@ export default function ProductsPage() {
 
   async function handleAddCommissionerToGroup() {
     if (!selectedCommissionerToAdd || !commissionersGroupId) return;
+    const commissioner = allEventCommissioners.find((c) => c.id === selectedCommissionerToAdd);
+    if (commissioner && commissioner.commissionerGroupId != null && String(commissioner.commissionerGroupId) !== commissionersGroupId) {
+      const sourceGroupName = allGroups.find((g) => g.id === String(commissioner.commissionerGroupId))?.name ?? `Grupo #${commissioner.commissionerGroupId}`;
+      const targetGroupName = allGroups.find((g) => g.id === commissionersGroupId)?.name ?? `Grupo #${commissionersGroupId}`;
+      const confirmed = window.confirm(`${commissioner.name} ja esta em "${sourceGroupName}". Mover para "${targetGroupName}"?`);
+      if (!confirmed) return;
+    }
     try {
       await api.updateCommissioner(String(id), selectedCommissionerToAdd, {
         commissionerGroupId: Number(commissionersGroupId),
@@ -380,7 +387,7 @@ export default function ProductsPage() {
         <Table>
           <thead>
             <tr>
-              <th>Nome</th><th>Preco</th><th>Qtd. Total</th><th>Disponivel</th><th>Periodo</th><th>Acoes</th>
+              <th>Nome</th><th>Preco</th><th>Disponivel</th><th>Periodo</th><th>Acoes</th>
             </tr>
           </thead>
           <tbody>
@@ -388,7 +395,6 @@ export default function ProductsPage() {
               <tr key={product.id}>
                 <td>{product.name}</td>
                 <td>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(product.price)}</td>
-                <td>{product.quantity ?? "-"}</td>
                 <td>{product.quantity ?? "-"}</td>
                 <td>
                   {product.startDate || product.endDate
