@@ -15,6 +15,7 @@ export function SaleForm({
   const [payload, setPayload] = useState<CreateSaleDTO>({
     productId: "",
     buyerName: "",
+    buyerCpf: "",
     buyerEmail: "",
     paymentMethod: "pix",
   });
@@ -53,6 +54,7 @@ export function SaleForm({
       </label>
       {products.length === 0 ? <small className="muted">Nenhum lote disponivel para este evento.</small> : null}
       <Input label="Comprador" value={payload.buyerName} onChange={(e) => setPayload((v) => ({ ...v, buyerName: e.target.value }))} />
+      <Input label="CPF" value={payload.buyerCpf} onChange={(e) => setPayload((v) => ({ ...v, buyerCpf: e.target.value }))} />
       <Input label="Email" type="email" value={payload.buyerEmail} onChange={(e) => setPayload((v) => ({ ...v, buyerEmail: e.target.value }))} />
       <label style={{ display: "grid", gap: "0.35rem" }}>
         <span style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>Pagamento</span>

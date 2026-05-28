@@ -53,6 +53,7 @@ function normalizeSale(item: Record<string, unknown>): Sale {
     id: String(item.id ?? ""),
     productId: String(item.product_id ?? item.productId ?? ""),
     buyerName: String(item.buyer_name ?? item.buyerName ?? ""),
+    buyerCpf: String(item.buyer_cpf ?? item.buyerCpf ?? ""),
     buyerEmail: String(item.buyer_email ?? item.buyerEmail ?? ""),
     paymentMethod: String(item.method_of_payment ?? item.paymentMethod ?? "pix"),
     price: Number(item.price ?? 0),
@@ -271,6 +272,7 @@ export const api = {
       body: JSON.stringify({
         product_id: Number(data.productId),
         buyer_name: data.buyerName,
+        buyer_cpf: data.buyerCpf,
         buyer_email: data.buyerEmail,
         method_of_payment: data.paymentMethod,
         sale_date: new Date().toISOString(),

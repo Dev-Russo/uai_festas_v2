@@ -15,6 +15,13 @@ def generate_qr_png_bytes(data: str) -> bytes:
     return bio.getvalue()
 
 
+def generate_qr_matrix(data: str) -> list[list[bool]]:
+    qr = qrcode.QRCode(box_size=1, border=2)
+    qr.add_data(data)
+    qr.make(fit=True)
+    return qr.get_matrix()
+
+
 def generate_ticket_pdf_bytes(sale, product, event, qr_png_bytes: bytes) -> bytes:
     """Generates a simple ticket PDF (A6) with sale/product/event info and embedded QR PNG.
     `sale`, `product`, `event` can be ORM objects or dict-like with attributes/keys.
@@ -43,24 +50,41 @@ def generate_ticket_pdf_bytes(sale, product, event, qr_png_bytes: bytes) -> byte
     y -= 6 * mm
     c.drawString(x, y, f"Price: R$ {getattr(sale, 'price', sale.get('price') if isinstance(sale, dict) else '')}")
 
-    # Draw QR image at bottom-right
+    # Draw QR as vector (modules) at bottom-right for lossless PDF
     try:
-        from PIL import Image
-        from reportlab.lib.utils import ImageReader
+        matrix = generate_qr_matrix(str(getattr(sale, 'unique_code', sale.get('unique_code') if isinstance(sale, dict) else '')))
+        n = len(matrix)
+        if n > 0:
+            target_size = 40 * mm
+            module_size = target_size / n
+            qr_x = width - margin - target_size
+            qr_y = margin
 
-        qr_img = Image.open(BytesIO(qr_png_bytes)).convert("RGBA")
-        # scale to 40mm
-        target_w = target_h = int(40 * mm)
-        qr_img = qr_img.resize((target_w, target_h))
-        qr_buf = BytesIO()
-        qr_img.save(qr_buf, format="PNG")
-        qr_buf.seek(0)
-
-        img_reader = ImageReader(qr_buf)
-        c.drawImage(img_reader, width - margin - target_w, margin, width=target_w, height=target_h)
+            c.setFillColorRGB(0, 0, 0)
+            c.setStrokeColorRGB(0, 0, 0)
+            for r in range(n):
+                for col in range(n):
+                    if matrix[r][col]:
+                        x_pos = qr_x + col * module_size
+                        y_pos = qr_y + (n - 1 - r) * module_size
+                        c.rect(x_pos, y_pos, module_size, module_size, stroke=0, fill=1)
     except Exception:
-        # keep silent but do not fail whole PDF generation
-        pass
+        # fallback to raster embedding if vector drawing fails
+        try:
+            from PIL import Image
+            from reportlab.lib.utils import ImageReader
+
+            qr_img = Image.open(BytesIO(qr_png_bytes)).convert("RGBA")
+            target_w = target_h = int(40 * mm)
+            qr_img = qr_img.resize((target_w, target_h))
+            qr_buf = BytesIO()
+            qr_img.save(qr_buf, format="PNG")
+            qr_buf.seek(0)
+
+            img_reader = ImageReader(qr_buf)
+            c.drawImage(img_reader, width - margin - target_w, margin, width=target_w, height=target_h)
+        except Exception:
+            pass
 
     c.showPage()
     c.save()

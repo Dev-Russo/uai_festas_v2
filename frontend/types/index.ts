@@ -40,6 +40,7 @@ export interface Sale {
   eventId?: string;
   productId: string;
   buyerName: string;
+  buyerCpf?: string;
   buyerEmail: string;
   paymentMethod: PaymentMethod | string;
   price: number;
@@ -108,6 +109,7 @@ export interface CreateCommissionerDTO {
 export interface CreateSaleDTO {
   productId: string;
   buyerName: string;
+  buyerCpf: string;
   buyerEmail: string;
   paymentMethod: PaymentMethod;
 }
