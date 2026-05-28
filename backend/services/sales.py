@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from enums.user import UserRole
+from enums.sales import SaleKind
 from models.sales import Sales
 from models.user import User
 from models.products import Product
@@ -7,6 +8,34 @@ from models.event import Event
 from schemas.sales import SalesCreate, SalesUpdate, SalesResponse
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
+
+
+def _assert_product_allowed_for_commissioner(db: Session, actor, product: Product) -> None:
+    from models.commissioner import Commissioner
+    from models.product_group import ProductGroup
+    from models.product_group import ProductGroupMembership
+
+    if not isinstance(actor, Commissioner) or actor.full_access:
+        return
+
+    if actor.commissioner_group_id is None:
+        raise HTTPException(status_code=403, detail="Comissário não está associado a nenhum grupo")
+
+    membership = (
+        db.query(ProductGroupMembership)
+        .join(ProductGroup)
+        .filter(
+            ProductGroupMembership.product_id == product.id,
+            ProductGroupMembership.group_id == actor.commissioner_group_id,
+            ProductGroupMembership.is_active == True,
+            ProductGroup.is_active == True,
+            ProductGroup.event_id == actor.event_id,
+        )
+        .first()
+    )
+
+    if not membership:
+        raise HTTPException(status_code=403, detail="Produto não autorizado para este comissário")
 
 
 def create_sale(db: Session, actor, sale: SalesCreate, event_id: int) -> SalesResponse:
@@ -26,20 +55,32 @@ def create_sale(db: Session, actor, sale: SalesCreate, event_id: int) -> SalesRe
     if product.event_id != event_id:
         raise HTTPException(status_code=400, detail="Produto nao pertence ao evento informado")
 
+    if not product.is_active:
+        raise HTTPException(status_code=400, detail="Produto inativo")
+
     if product.available_quantity is not None and product.available_quantity <= 0:
         raise HTTPException(status_code=400, detail="Produto esgotado")
 
+    _assert_product_allowed_for_commissioner(db, actor, product)
+
+    # O preço é calculado no backend para garantir consistência:
+    # - cortesia => 0
+    # - venda regular => preço do produto
     from models.commissioner import Commissioner
     commissioner_id = actor.id if isinstance(actor, Commissioner) else None
+
+    price = 0 if sale.sale_type == SaleKind.courtesy else product.price
 
     db_sale = Sales(
         buyer_name=sale.buyer_name,
         buyer_email=sale.buyer_email,
+        buyer_cpf=sale.buyer_cpf,
         product_id=sale.product_id,
         method_of_payment=sale.method_of_payment,
+        sale_type=sale.sale_type.value if hasattr(sale.sale_type, 'value') else sale.sale_type,
         sale_date=sale.sale_date,
         status=sale.status,
-        price=product.price,
+        price=price,
         commissioner_id=commissioner_id,
     )
     

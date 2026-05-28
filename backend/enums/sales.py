@@ -5,3 +5,7 @@ class SaleStatus(str, Enum):
     cancelled = "cancelled"
     refunded = "refunded"
     pending = "pending"
+
+class SaleKind(str, Enum):
+    regular = "regular"
+    courtesy = "courtesy"
