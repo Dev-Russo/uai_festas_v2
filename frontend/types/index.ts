@@ -42,6 +42,7 @@ export interface Sale {
   buyerName: string;
   buyerCpf?: string;
   buyerEmail: string;
+  saleType?: string;
   paymentMethod: PaymentMethod | string;
   price: number;
   status: SaleStatus;
@@ -110,6 +111,7 @@ export interface CreateSaleDTO {
   productId: string;
   buyerName: string;
   buyerCpf: string;
+  saleType?: string;
   buyerEmail: string;
   paymentMethod: PaymentMethod;
 }
