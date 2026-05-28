@@ -267,6 +267,27 @@ export const api = {
     const data = await request<Record<string, unknown>>(`/events/${eventId}/sales/${saleId}`);
     return normalizeSale(data);
   },
+  downloadTicket: async (eventId: string, saleId: string) => {
+    const isBrowser = typeof window !== "undefined";
+    const token = isBrowser ? window.localStorage.getItem("token") : null;
+    const res = await fetch(`${BASE_URL}/events/${eventId}/sales/${saleId}/ticket`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!res.ok) {
+      throw new Error(await res.text());
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ticket_${saleId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
   createSale: (eventId: string, data: CreateSaleDTO) =>
     request(`/events/${eventId}/sales/`, {
       method: "POST",

@@ -134,6 +134,19 @@ export default function SalesPage() {
                         type="button"
                         style={{ padding: "0.35rem 0.6rem", fontSize: "0.82rem" }}
                         onClick={async () => {
+                          try {
+                            await api.downloadTicket(String(id), String(sale.id));
+                          } catch (error) {
+                            setActionFeedback({ type: "error", message: parseErrorMessage(error, "Nao foi possivel baixar o ingresso.") });
+                          }
+                        }}
+                      >
+                        Baixar PDF
+                      </Button>
+                      <Button
+                        type="button"
+                        style={{ padding: "0.35rem 0.6rem", fontSize: "0.82rem" }}
+                        onClick={async () => {
                           if (!window.confirm("Confirmar check-in desta venda?")) return;
                           try {
                             await api.checkinSale(String(id), String(sale.id));
