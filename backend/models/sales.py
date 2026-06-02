@@ -20,5 +20,7 @@ class Sales(Base):
     checkin_at = Column(DateTime(timezone=True), nullable=True)
     unique_code = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
     commissioner_id = Column(Integer, ForeignKey("commissioners.id"), nullable=True)
+    last_edited_by = Column(String, nullable=True)
+    last_edited_at = Column(DateTime(timezone=True), nullable=True)
 
     product = relationship("Product", back_populates="sales")

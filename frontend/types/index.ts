@@ -111,7 +111,6 @@ export interface CreateSaleDTO {
   productId: string;
   buyerName: string;
   buyerCpf: string;
-  saleType?: string;
   buyerEmail: string;
   paymentMethod: PaymentMethod;
 }

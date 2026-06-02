@@ -7,7 +7,7 @@ from enums.sales import SaleStatus, SaleKind
 class SalesBase(BaseModel):
     buyer_name: str
     buyer_email: EmailStr
-    buyer_cpf: str
+    buyer_cpf: Optional[str] = ""
     product_id: int
     method_of_payment: str
     sale_type: SaleKind = SaleKind.regular
@@ -32,6 +32,8 @@ class SalesResponse(SalesBase):
     unique_code: uuid.UUID
     checkin_at: Optional[datetime] = None
     commissioner_id: Optional[int] = None
+    last_edited_by: Optional[str] = None
+    last_edited_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -15,6 +15,14 @@ os.environ.setdefault("SECRET_KEY", "test-secret")
 os.environ.setdefault("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
 os.environ.setdefault("ALGORITHM", "HS256")
 
+# Ensure tests can import application modules using top-level names
+# by adding the `backend` package directory to sys.path. This makes
+# `from database import Base` succeed regardless of cwd when running pytest.
+import sys
+_backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _backend_dir not in sys.path:
+    sys.path.insert(0, _backend_dir)
+
 from database import Base
 from dependencies.db import get_db
 from main import app

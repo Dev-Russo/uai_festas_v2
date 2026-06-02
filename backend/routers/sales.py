@@ -49,10 +49,10 @@ def update_sale(
     sale_id: int,
     sale_data: SalesUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    actor=Depends(get_current_actor),
 ) -> SalesResponse:
     from services.sales import update_sale
-    return update_sale(db, current_user, sale_id, sale_data)
+    return update_sale(db, actor, sale_id, sale_data)
 
 @router.delete("/{sale_id}")
 def delete_sale(

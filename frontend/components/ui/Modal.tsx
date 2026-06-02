@@ -13,18 +13,18 @@ export function Modal({
     return null;
   }
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(26,26,46,0.35)",
-        backdropFilter: "blur(4px)",
-        display: "grid",
-        placeItems: "center",
-        zIndex: 40,
-        padding: "1rem",
-      }}
-    >
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(26,26,46,0.35)",
+          backdropFilter: "blur(4px)",
+          display: "grid",
+          placeItems: "center",
+          zIndex: 10000,
+          padding: "1rem",
+        }}
+      >
       <div className="card" style={{ width: "min(560px, 100%)", padding: "1rem" }}>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h3 style={{ margin: 0 }}>{title}</h3>

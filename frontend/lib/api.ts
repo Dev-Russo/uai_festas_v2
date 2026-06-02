@@ -288,6 +288,20 @@ export const api = {
     a.remove();
     URL.revokeObjectURL(url);
   },
+  updateSale: (eventId: string, saleId: string, data: { buyer_name?: string; buyer_email?: string; buyer_cpf?: string }) =>
+    request(`/events/${eventId}/sales/${saleId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        buyer_name: data.buyer_name,
+        buyer_email: data.buyer_email,
+        buyer_cpf: data.buyer_cpf,
+      }),
+    }),
+  sendTicketEmail: (eventId: string, saleId: string, payload: { to_email?: string; subject?: string; body?: string }) =>
+    request(`/events/${eventId}/sales/${saleId}/email`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   createSale: (eventId: string, data: CreateSaleDTO) =>
     request(`/events/${eventId}/sales/`, {
       method: "POST",
@@ -295,7 +309,6 @@ export const api = {
         product_id: Number(data.productId),
         buyer_name: data.buyerName,
         buyer_cpf: data.buyerCpf,
-        sale_type: data.saleType ?? "regular",
         buyer_email: data.buyerEmail,
         method_of_payment: data.paymentMethod,
         sale_date: new Date().toISOString(),

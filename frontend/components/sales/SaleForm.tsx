@@ -17,9 +17,10 @@ export function SaleForm({
     buyerName: "",
     buyerCpf: "",
     buyerEmail: "",
-    saleType: "regular",
     paymentMethod: "pix",
   });
+
+  const selectedProduct = products.find((p) => String(p.id) === String(payload.productId));
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -57,15 +58,9 @@ export function SaleForm({
       <Input label="Comprador" value={payload.buyerName} onChange={(e) => setPayload((v) => ({ ...v, buyerName: e.target.value }))} />
       <Input label="CPF" value={payload.buyerCpf} onChange={(e) => setPayload((v) => ({ ...v, buyerCpf: e.target.value }))} />
       <Input label="Email" type="email" value={payload.buyerEmail} onChange={(e) => setPayload((v) => ({ ...v, buyerEmail: e.target.value }))} />
-      <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <input
-          type="checkbox"
-          checked={payload.saleType === "courtesy"}
-          onChange={(e) => setPayload((v) => ({ ...v, saleType: e.target.checked ? "courtesy" : "regular" }))}
-        />
-        <span style={{ fontSize: "0.95rem" }}>Cortesia (gratuito)</span>
-      </label>
-      {payload.saleType !== "courtesy" ? (
+      {selectedProduct && selectedProduct.price === 0 ? (
+        <div style={{ fontSize: "0.95rem", color: "var(--text-secondary)" }}>Cortesia (gratuito)</div>
+      ) : (
         <label style={{ display: "grid", gap: "0.35rem" }}>
           <span style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>Pagamento</span>
           <select
@@ -79,7 +74,7 @@ export function SaleForm({
             <option value="cash">Dinheiro</option>
           </select>
         </label>
-      ) : null}
+      )}
       <Button type="submit" disabled={!payload.productId || products.length === 0}>Vender ingresso</Button>
     </form>
   );

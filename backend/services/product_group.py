@@ -55,7 +55,8 @@ def create_group(db: Session, event_id: int, data: ProductGroupCreate, current_u
             ProductGroup.is_default == True,
         ).first()
         if existing_default:
-            existing_default.is_default = False
+            # Do not silently change defaults — enforce single-default rule.
+            raise HTTPException(status_code=400, detail="Já existe um grupo padrão para este evento")
 
     if data.parent_group_id is not None:
         parent = db.query(ProductGroup).filter(
@@ -101,7 +102,8 @@ def update_group(db: Session, event_id: int, group_id: int, data: ProductGroupUp
             ProductGroup.is_default == True,
         ).first()
         if existing_default:
-            existing_default.is_default = False
+            # Enforce single-default rule on update as well.
+            raise HTTPException(status_code=400, detail="Já existe um grupo padrão para este evento")
 
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(group, key, value)
