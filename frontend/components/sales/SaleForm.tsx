@@ -15,9 +15,12 @@ export function SaleForm({
   const [payload, setPayload] = useState<CreateSaleDTO>({
     productId: "",
     buyerName: "",
+    buyerCpf: "",
     buyerEmail: "",
     paymentMethod: "pix",
   });
+
+  const selectedProduct = products.find((p) => String(p.id) === String(payload.productId));
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -53,20 +56,25 @@ export function SaleForm({
       </label>
       {products.length === 0 ? <small className="muted">Nenhum lote disponivel para este evento.</small> : null}
       <Input label="Comprador" value={payload.buyerName} onChange={(e) => setPayload((v) => ({ ...v, buyerName: e.target.value }))} />
+      <Input label="CPF" value={payload.buyerCpf} onChange={(e) => setPayload((v) => ({ ...v, buyerCpf: e.target.value }))} />
       <Input label="Email" type="email" value={payload.buyerEmail} onChange={(e) => setPayload((v) => ({ ...v, buyerEmail: e.target.value }))} />
-      <label style={{ display: "grid", gap: "0.35rem" }}>
-        <span style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>Pagamento</span>
-        <select
-          className="input-field"
-          value={payload.paymentMethod}
-          onChange={(e) => setPayload((v) => ({ ...v, paymentMethod: e.target.value as PaymentMethod }))}
-        >
-          <option value="pix">PIX</option>
-          <option value="credit_card">Credito</option>
-          <option value="debit_card">Debito</option>
-          <option value="cash">Dinheiro</option>
-        </select>
-      </label>
+      {selectedProduct && selectedProduct.price === 0 ? (
+        <div style={{ fontSize: "0.95rem", color: "var(--text-secondary)" }}>Cortesia (gratuito)</div>
+      ) : (
+        <label style={{ display: "grid", gap: "0.35rem" }}>
+          <span style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>Pagamento</span>
+          <select
+            className="input-field"
+            value={payload.paymentMethod}
+            onChange={(e) => setPayload((v) => ({ ...v, paymentMethod: e.target.value as PaymentMethod }))}
+          >
+            <option value="pix">PIX</option>
+            <option value="credit_card">Credito</option>
+            <option value="debit_card">Debito</option>
+            <option value="cash">Dinheiro</option>
+          </select>
+        </label>
+      )}
       <Button type="submit" disabled={!payload.productId || products.length === 0}>Vender ingresso</Button>
     </form>
   );

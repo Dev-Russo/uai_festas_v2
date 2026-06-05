@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from enums.user import UserRole
+from enums.sales import SaleKind
 from models.sales import Sales
 from models.user import User
 from models.products import Product
@@ -7,6 +8,34 @@ from models.event import Event
 from schemas.sales import SalesCreate, SalesUpdate, SalesResponse
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
+
+
+def _assert_product_allowed_for_commissioner(db: Session, actor, product: Product) -> None:
+    from models.commissioner import Commissioner
+    from models.product_group import ProductGroup
+    from models.product_group import ProductGroupMembership
+
+    if not isinstance(actor, Commissioner) or actor.full_access:
+        return
+
+    if actor.commissioner_group_id is None:
+        raise HTTPException(status_code=403, detail="Comissário não está associado a nenhum grupo")
+
+    membership = (
+        db.query(ProductGroupMembership)
+        .join(ProductGroup)
+        .filter(
+            ProductGroupMembership.product_id == product.id,
+            ProductGroupMembership.group_id == actor.commissioner_group_id,
+            ProductGroupMembership.is_active == True,
+            ProductGroup.is_active == True,
+            ProductGroup.event_id == actor.event_id,
+        )
+        .first()
+    )
+
+    if not membership:
+        raise HTTPException(status_code=403, detail="Produto não autorizado para este comissário")
 
 
 def create_sale(db: Session, actor, sale: SalesCreate, event_id: int) -> SalesResponse:
@@ -26,20 +55,36 @@ def create_sale(db: Session, actor, sale: SalesCreate, event_id: int) -> SalesRe
     if product.event_id != event_id:
         raise HTTPException(status_code=400, detail="Produto nao pertence ao evento informado")
 
+    if not product.is_active:
+        raise HTTPException(status_code=400, detail="Produto inativo")
+
     if product.available_quantity is not None and product.available_quantity <= 0:
         raise HTTPException(status_code=400, detail="Produto esgotado")
 
+    _assert_product_allowed_for_commissioner(db, actor, product)
+
+    # O preço e o tipo de venda (cortesia) devem ser derivados do produto,
+    # garantindo consistencia mesmo que o cliente tente enviar outro valor.
     from models.commissioner import Commissioner
     commissioner_id = actor.id if isinstance(actor, Commissioner) else None
+
+    if product.price == 0:
+        price = 0
+        sale_type_value = SaleKind.courtesy.value
+    else:
+        price = product.price
+        sale_type_value = SaleKind.regular.value
 
     db_sale = Sales(
         buyer_name=sale.buyer_name,
         buyer_email=sale.buyer_email,
+        buyer_cpf=sale.buyer_cpf,
         product_id=sale.product_id,
         method_of_payment=sale.method_of_payment,
+        sale_type=sale_type_value,
         sale_date=sale.sale_date,
         status=sale.status,
-        price=product.price,
+        price=price,
         commissioner_id=commissioner_id,
     )
     
@@ -71,15 +116,60 @@ def get_sale_by_id(db: Session, actor, sale_id: int, event_id: int) -> SalesResp
     return sale
 
 def update_sale(db: Session, current_user: User, sale_id: int, sale_data: SalesUpdate) -> SalesResponse:
-    if current_user.role != UserRole.admin:
-        raise HTTPException(status_code=403, detail="Acesso negado")
-    
+    # Now accepts any authenticated actor (User or Commissioner) and applies
+    # authorization rules:
+    # - admin: full access
+    # - producer who owns the event: may edit buyer fields
+    # - commissioner with full_access: may edit buyer fields
+    actor = current_user
     sale = db.query(Sales).filter(Sales.id == sale_id).first()
     if not sale:
         raise HTTPException(status_code=404, detail="Venda não encontrada")
-    
-    for key, value in sale_data.model_dump(exclude_unset=True).items():
+
+    # Determine event owner
+    event_owner_id = None
+    if sale.product and getattr(sale.product, 'event', None):
+        event_owner_id = sale.product.event.user_id
+
+    allowed = False
+    # Admins have full rights
+    if isinstance(actor, User) and actor.role == UserRole.admin:
+        allowed = True
+    # Producer who owns the event may edit buyer fields
+    elif isinstance(actor, User) and actor.role == UserRole.producer and actor.id == event_owner_id:
+        allowed = True
+    # Commissioner with full_access
+    else:
+        try:
+            from models.commissioner import Commissioner
+            if isinstance(actor, Commissioner) and actor.full_access:
+                allowed = True
+        except Exception:
+            pass
+
+    if not allowed:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
+    updates = sale_data.model_dump(exclude_unset=True)
+
+    # Non-admin actors can only update buyer fields for safety.
+    if not (isinstance(actor, User) and actor.role == UserRole.admin):
+        allowed_keys = {"buyer_name", "buyer_email", "buyer_cpf"}
+        updates = {k: v for k, v in updates.items() if k in allowed_keys}
+
+    for key, value in updates.items():
         setattr(sale, key, value)
+
+    # Audit
+    editor_identity = None
+    if isinstance(actor, User):
+        editor_identity = actor.email
+    else:
+        # Commissioner
+        editor_identity = getattr(actor, 'username', None)
+    from datetime import datetime, timezone as _tz
+    sale.last_edited_by = editor_identity
+    sale.last_edited_at = datetime.now(_tz.utc)
 
     db.commit()
     db.refresh(sale)

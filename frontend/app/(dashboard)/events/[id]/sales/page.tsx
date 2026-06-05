@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { Product, Sale } from "@/types";
 import { SaleForm } from "@/components/sales/SaleForm";
+import TicketModal from "@/components/sales/TicketModal";
 import { Table } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
@@ -16,6 +17,8 @@ export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [open, setOpen] = useState(false);
+  const [ticketOpen, setTicketOpen] = useState(false);
+  const [ticketSaleId, setTicketSaleId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [salesError, setSalesError] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<{ type: "error" | "success"; message: string } | null>(null);
@@ -134,6 +137,16 @@ export default function SalesPage() {
                         type="button"
                         style={{ padding: "0.35rem 0.6rem", fontSize: "0.82rem" }}
                         onClick={async () => {
+                          setTicketSaleId(String(sale.id));
+                          setTicketOpen(true);
+                        }}
+                      >
+                        Visualizar
+                      </Button>
+                      <Button
+                        type="button"
+                        style={{ padding: "0.35rem 0.6rem", fontSize: "0.82rem" }}
+                        onClick={async () => {
                           if (!window.confirm("Confirmar check-in desta venda?")) return;
                           try {
                             await api.checkinSale(String(id), String(sale.id));
@@ -171,6 +184,15 @@ export default function SalesPage() {
           </tbody>
         </Table>
       </section>
+      {ticketOpen && (
+        <TicketModal
+          eventId={String(id)}
+          saleId={ticketSaleId}
+          open={ticketOpen}
+          onClose={() => { setTicketOpen(false); setTicketSaleId(null); }}
+          onSaved={() => { setActionFeedback({ type: "success", message: "Dados atualizados." }); loadSales(); }}
+        />
+      )}
 
       <Modal open={open} title="Vender ingresso" onClose={() => setOpen(false)}>
         <SaleForm

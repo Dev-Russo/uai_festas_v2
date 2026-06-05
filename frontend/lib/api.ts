@@ -53,6 +53,8 @@ function normalizeSale(item: Record<string, unknown>): Sale {
     id: String(item.id ?? ""),
     productId: String(item.product_id ?? item.productId ?? ""),
     buyerName: String(item.buyer_name ?? item.buyerName ?? ""),
+    buyerCpf: String(item.buyer_cpf ?? item.buyerCpf ?? ""),
+    saleType: String(item.sale_type ?? item.saleType ?? "regular"),
     buyerEmail: String(item.buyer_email ?? item.buyerEmail ?? ""),
     paymentMethod: String(item.method_of_payment ?? item.paymentMethod ?? "pix"),
     price: Number(item.price ?? 0),
@@ -265,12 +267,48 @@ export const api = {
     const data = await request<Record<string, unknown>>(`/events/${eventId}/sales/${saleId}`);
     return normalizeSale(data);
   },
+  downloadTicket: async (eventId: string, saleId: string) => {
+    const isBrowser = typeof window !== "undefined";
+    const token = isBrowser ? window.localStorage.getItem("token") : null;
+    const res = await fetch(`${BASE_URL}/events/${eventId}/sales/${saleId}/ticket`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!res.ok) {
+      throw new Error(await res.text());
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ticket_${saleId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
+  updateSale: (eventId: string, saleId: string, data: { buyer_name?: string; buyer_email?: string; buyer_cpf?: string }) =>
+    request(`/events/${eventId}/sales/${saleId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        buyer_name: data.buyer_name,
+        buyer_email: data.buyer_email,
+        buyer_cpf: data.buyer_cpf,
+      }),
+    }),
+  sendTicketEmail: (eventId: string, saleId: string, payload: { to_email?: string; subject?: string; body?: string }) =>
+    request(`/events/${eventId}/sales/${saleId}/email`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   createSale: (eventId: string, data: CreateSaleDTO) =>
     request(`/events/${eventId}/sales/`, {
       method: "POST",
       body: JSON.stringify({
         product_id: Number(data.productId),
         buyer_name: data.buyerName,
+        buyer_cpf: data.buyerCpf,
         buyer_email: data.buyerEmail,
         method_of_payment: data.paymentMethod,
         sale_date: new Date().toISOString(),

@@ -10,7 +10,9 @@ class Sales(Base):
     id = Column(Integer, primary_key=True, index=True)    
     buyer_name = Column(String, index=True, nullable=False)
     buyer_email = Column(String, index=True, nullable=False)
+    buyer_cpf = Column(String, index=True, nullable=False)
     price = Column(Integer, nullable=False)
+    sale_type = Column(String, nullable=False, default="regular")
     product_id = Column(Integer, ForeignKey("product.id"), nullable=False)
     method_of_payment = Column(String, nullable=False)
     status = Column(String, index=True, nullable=False) #paid, cancelled, refunded, pending
@@ -18,5 +20,7 @@ class Sales(Base):
     checkin_at = Column(DateTime(timezone=True), nullable=True)
     unique_code = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
     commissioner_id = Column(Integer, ForeignKey("commissioners.id"), nullable=True)
+    last_edited_by = Column(String, nullable=True)
+    last_edited_at = Column(DateTime(timezone=True), nullable=True)
 
     product = relationship("Product", back_populates="sales")
